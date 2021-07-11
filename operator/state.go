@@ -18,13 +18,25 @@ func (s State) Changed(other State) bool {
 	if len(s.entries) != len(other.entries) {
 		return true
 	}
-	sort.SortStable(stateEntries(s.entries))
-	sort.SortStable(stateEntries(other.entries))
+	sort.Sort(stateEntries(s.entries))
+	sort.Sort(stateEntries(other.entries))
 
 	for i, ent := range s.entries {
-		oent := other[i]
+		oent := other.entries[i]
 		if ent.name != oent.name {
 			return true
+		}
+
+		if (ent.file == nil) != (oent.file == nil) {
+			return true
+		}
+		if ent.file != nil {
+			sf, of := ent.file, oent.file
+			if sf.abs != of.abs ||
+				sf.info.IsDir() != of.info.IsDir() ||
+				sf.info.Mode().Perm() != of.info.Mode().Perm() {
+				return true
+			}
 		}
 	}
 
@@ -33,6 +45,10 @@ func (s State) Changed(other State) bool {
 
 type stateEntry struct {
 	name string
+	file *stateFileEntry
+}
+
+type stateFileEntry struct {
 	abs  string
 	f    fs.File
 	info fs.FileInfo

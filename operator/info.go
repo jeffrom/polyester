@@ -1,6 +1,10 @@
 package operator
 
-import "io"
+import (
+	"io"
+
+	"github.com/spf13/cobra"
+)
 
 type Info interface {
 	Data() *InfoData
@@ -8,5 +12,19 @@ type Info interface {
 }
 
 type InfoData struct {
-	Description string `json:"description,omitempty"`
+	Command *Command `json:"options,omitempty"`
+}
+
+func (id *InfoData) Data() *InfoData { return id }
+func (id *InfoData) TextSummary(w io.Writer) error {
+	_, err := w.Write([]byte(id.Command.UsageString()))
+	return err
+}
+
+type CommandArgFunc func(cmd *cobra.Command, args []string, target interface{}) error
+
+type Command struct {
+	*cobra.Command
+	Args   CommandArgFunc
+	Target interface{}
 }

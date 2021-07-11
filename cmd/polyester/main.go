@@ -19,10 +19,24 @@ func main() {
 
 func run(rawArgs []string) error {
 	rootCmd := &cobra.Command{
-		Use: "polyester",
+		Use:  "polyester",
+		Args: cobra.RangeArgs(0, 1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			pl := planner.New("")
-			_, err := pl.Reconcile(cmd.Context())
+			ctx := cmd.Context()
+			dir := ""
+			if len(args) > 0 {
+				dir = args[0]
+			}
+
+			pl, err := planner.New(dir)
+			if err != nil {
+				return err
+			}
+
+			if err := pl.Check(ctx); err != nil {
+				return err
+			}
+			_, err = pl.Reconcile(ctx)
 			return err
 		},
 	}

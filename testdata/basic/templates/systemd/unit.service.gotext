@@ -1,0 +1,8 @@
+{{- $unit := .Data.unit -}}
+[Unit]
+Description={{ $unit.Description }}
+
+[Service]
+WorkingDirectory=/home/appuser/apps/ergo
+ExecStart=/root/cluster/server/apps/ergo/run
+
