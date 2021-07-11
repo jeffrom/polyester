@@ -36,8 +36,9 @@ func run(rawArgs []string) error {
 			if err := pl.Check(ctx); err != nil {
 				return err
 			}
-			_, err = pl.Reconcile(ctx)
-			return err
+			return nil
+			// _, err = pl.Reconcile(ctx)
+			// return err
 		},
 	}
 
