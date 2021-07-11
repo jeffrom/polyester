@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/spf13/cobra"
-
-	"github.com/jeffrom/polyester/planner"
+	"github.com/jeffrom/polyester/cmd/polyester/commands"
 )
+
+var ShareDir = "/var/lib/polyester"
 
 func main() {
 	if err := run(os.Args); err != nil {
@@ -18,30 +18,5 @@ func main() {
 }
 
 func run(rawArgs []string) error {
-	rootCmd := &cobra.Command{
-		Use:  "polyester",
-		Args: cobra.RangeArgs(0, 1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := cmd.Context()
-			dir := ""
-			if len(args) > 0 {
-				dir = args[0]
-			}
-
-			pl, err := planner.New(dir)
-			if err != nil {
-				return err
-			}
-
-			if err := pl.Check(ctx); err != nil {
-				return err
-			}
-			return nil
-			// _, err = pl.Reconcile(ctx)
-			// return err
-		},
-	}
-
-	rootCmd.SetArgs(rawArgs[1:])
-	return rootCmd.ExecuteContext(context.Background())
+	return commands.ExecArgs(context.Background(), rawArgs[1:])
 }
