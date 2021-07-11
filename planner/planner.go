@@ -22,11 +22,9 @@ var (
 func setupAllOps() {
 	allOps = make(map[string]operator.Interface)
 	for _, op := range Operators() {
-		allOps[op.Name()] = op
+		allOps[op.Info().Name()] = op
 	}
 }
-
-type Plan []operator.Interface
 
 type Planner struct {
 	rootDir  string
@@ -56,11 +54,7 @@ func New(p string) (*Planner, error) {
 func (r *Planner) Check(ctx context.Context) error {
 	allOptsOnce.Do(setupAllOps)
 
-	pf := r.planFile
-	if pf == "" {
-		pf = "polyester.sh"
-	}
-
+	pf := r.getPlanFile()
 	pb, err := fs.ReadFile(os.DirFS(r.rootDir), pf)
 	if err != nil {
 		return err
@@ -76,8 +70,12 @@ func (r *Planner) Check(ctx context.Context) error {
 	return nil
 }
 
-func (r *Planner) Reconcile(ctx context.Context) (Result, error) {
-	return Result{}, nil
+func (r *Planner) getPlanFile() string {
+	pf := r.planFile
+	if pf == "" {
+		pf = "polyester.sh"
+	}
+	return pf
 }
 
 type Result struct {

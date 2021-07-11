@@ -3,7 +3,9 @@ package commands
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
 
@@ -31,8 +33,6 @@ func ExecArgs(ctx context.Context, args []string) error {
 				return err
 			}
 			return nil
-			// _, err = pl.Reconcile(ctx)
-			// return err
 		},
 	}
 
@@ -54,7 +54,7 @@ func ExecArgs(ctx context.Context, args []string) error {
 
 func addOps(parent *cobra.Command, fn operatorCommandFunc) error {
 	for _, op := range planner.Operators() {
-		fmt.Println("adding command name:", op.Name())
+		fmt.Println("adding command name:", op.Info().Name())
 		parent.AddCommand(fn(op))
 	}
 	return nil
@@ -67,12 +67,15 @@ type operatorCommandFunc func(op operator.Interface) *cobra.Command
 func operatorCommandForPlan(op operator.Interface) *cobra.Command {
 	info := op.Info()
 	cmd := info.Data().Command
-	// target := cmd.Target
 
 	cobraCmd := &*cmd.Command
 	cobraCmd.Hidden = true
 	cobraCmd.RunE = func(cmd *cobra.Command, args []string) error {
-		return nil
+		planFile := os.Getenv("_POLY_PLAN")
+		if planFile == "" {
+			return errors.New("expected $_POLY_PLAN to be set")
+		}
+		return planner.AppendPlan(cmd.Context(), planFile, info, cmd, args)
 	}
 	return cobraCmd
 }

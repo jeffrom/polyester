@@ -7,13 +7,12 @@ import (
 )
 
 type TouchOpts struct {
-	Mode uint32
-	Path string
+	Mode uint32 `json:"mode,omitempty"`
+	Path string `json:"path"`
 }
 
 type Touch struct{}
 
-func (op Touch) Name() string { return "touch" }
 func (op Touch) Info() operator.Info {
 	opts := &TouchOpts{}
 	cmd := &cobra.Command{
@@ -27,10 +26,11 @@ mtime if it already exists.`,
 	flags.Uint32VarP(&opts.Mode, "mode", "m", 0644, "the mode to set the file to")
 
 	return &operator.InfoData{
+		OpName: "touch",
 		Command: &operator.Command{
-			Command: cmd,
-			Args:    touchArgs,
-			Target:  opts,
+			Command:   cmd,
+			ApplyArgs: touchArgs,
+			Target:    opts,
 		},
 	}
 }

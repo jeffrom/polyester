@@ -8,8 +8,9 @@ import (
 
 func newExecCmd() (*cobra.Command, error) {
 	cmd := &cobra.Command{
-		Use:   "exec",
-		Short: "executes operators",
+		Use:    "exec",
+		Short:  "executes operators",
+		Hidden: true,
 	}
 
 	if err := addOps(cmd, operatorCommandForExec); err != nil {

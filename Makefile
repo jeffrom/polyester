@@ -63,7 +63,7 @@ RM?=rm -f
 
 .PHONY: clean
 clean:
-	$(RM) -r $(TMPDIR)/polyester-*
+	$(RM) -r $(TMPDIR)/polyester*
 	$(RM) $(DOCS) polyester
 
 .PHONY: install

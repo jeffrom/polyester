@@ -3,7 +3,6 @@
 package operator
 
 type Interface interface {
-	Name() string
 	Info() Info
 	GetState(octx Context) (State, error)
 	Run(octx Context) error
