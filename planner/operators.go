@@ -6,6 +6,7 @@ import (
 	"github.com/jeffrom/polyester/operator"
 	"github.com/jeffrom/polyester/operator/fileop"
 	"github.com/jeffrom/polyester/operator/gitop"
+	"github.com/jeffrom/polyester/operator/planop"
 )
 
 var (
@@ -23,6 +24,8 @@ func setupAllOps() {
 
 func opCreators() []func() operator.Interface {
 	return []func() operator.Interface{
+		opCreator(planop.Plan{Args: &planop.PlanOpts{}}),
+		opCreator(planop.Dependency{Args: &planop.DependencyOpts{}}),
 		opCreator(fileop.Touch{Args: &fileop.TouchOpts{}}),
 		opCreator(gitop.Repo{Args: &gitop.RepoOpts{}}),
 	}
@@ -32,6 +35,7 @@ func opCreator(op operator.Interface) func() operator.Interface {
 	return func() operator.Interface { return op }
 }
 
+// Operators returns a list of all available operators.
 func Operators() []operator.Interface {
 	ops := opCreators()
 	res := make([]operator.Interface, len(ops))
@@ -41,6 +45,8 @@ func Operators() []operator.Interface {
 	return res
 }
 
+// operation is an implementation of operator.Interface that uses decoded Plan
+// arguments instead of parsing them in-process.
 type operation struct {
 	op   operator.Interface
 	data *operator.InfoData
