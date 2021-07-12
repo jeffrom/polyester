@@ -4,7 +4,6 @@ package commands
 import (
 	"context"
 	"errors"
-	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -56,7 +55,7 @@ func ExecArgs(ctx context.Context, args []string) error {
 
 func addOps(parent *cobra.Command, fn operatorCommandFunc) error {
 	for _, op := range planner.Operators() {
-		fmt.Println("adding command name:", op.Info().Name())
+		// fmt.Println("adding command name:", op.Info().Name())
 		parent.AddCommand(fn(op))
 	}
 	return nil

@@ -163,7 +163,7 @@ func (r *Planner) executePlan(octx operator.Context, plan *Plan, stateDir string
 
 		prevEmpty := prevst.Empty()
 		changed := prevst.Changed(st)
-		fmt.Printf("%20s: [empty: %8v] [changed: %8v]\n", op.Info().Name(), prevst.Empty(), prevst.Changed(st))
+		fmt.Printf("%20s: [empty: %8v] [changed: %8v] [dirty: %8v]\n", op.Info().Name(), prevst.Empty(), prevst.Changed(st), dirty)
 		if dirty || prevEmpty || changed {
 			dirty = true
 			fmt.Printf("executing %s (%+v)\n", op.Info().Name(), data.Command.Target)
@@ -172,7 +172,7 @@ func (r *Planner) executePlan(octx operator.Context, plan *Plan, stateDir string
 				return err
 			}
 
-			nextSt, err := op.GetState(octx)
+			nextSt, err := op.GetState(octx.WithGotState(true))
 			if err != nil {
 				return err
 			}

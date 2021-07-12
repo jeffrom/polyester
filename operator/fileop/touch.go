@@ -26,9 +26,9 @@ func (op Touch) Info() operator.Info {
 	opts := op.Args.(*TouchOpts)
 
 	cmd := &cobra.Command{
-		Use:   "touch FILE",
+		Use:   "touch file",
 		Args:  cobra.ExactArgs(1),
-		Short: "creates or updates the mtime of FILE",
+		Short: "creates or updates the mtime of file",
 		Long: `Create a file if it doesn't already exist, otherwise update the file's
 mtime`,
 	}

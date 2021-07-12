@@ -5,6 +5,7 @@ import (
 
 	"github.com/jeffrom/polyester/operator"
 	"github.com/jeffrom/polyester/operator/fileop"
+	"github.com/jeffrom/polyester/operator/gitop"
 )
 
 var (
@@ -22,8 +23,13 @@ func setupAllOps() {
 
 func opCreators() []func() operator.Interface {
 	return []func() operator.Interface{
-		func() operator.Interface { return fileop.Touch{Args: &fileop.TouchOpts{}} },
+		opCreator(fileop.Touch{Args: &fileop.TouchOpts{}}),
+		opCreator(gitop.Repo{Args: &gitop.RepoOpts{}}),
 	}
+}
+
+func opCreator(op operator.Interface) func() operator.Interface {
+	return func() operator.Interface { return op }
 }
 
 func Operators() []operator.Interface {

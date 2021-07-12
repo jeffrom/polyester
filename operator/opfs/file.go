@@ -7,8 +7,9 @@ import (
 )
 
 type StateFileEntry struct {
-	Info   fs.FileInfo
-	SHA256 []byte
+	Info     fs.FileInfo
+	SHA256   []byte
+	Contents []byte
 }
 
 func (f StateFileEntry) MarshalJSON() ([]byte, error) {
@@ -22,6 +23,7 @@ func (f StateFileEntry) MarshalJSON() ([]byte, error) {
 		RawMode:    uint32(inf.Mode()),
 		RawSize:    inf.Size(),
 		SHA256:     f.SHA256,
+		Contents:   f.Contents,
 	}
 	return json.Marshal(sfi)
 }
@@ -47,6 +49,7 @@ type StateFileInfo struct {
 	RawIsDir   bool      `json:"json:"is_dir,omitempty"`
 	RawIsFile  bool      `json:"json:"is_file,omitempty"`
 	SHA256     []byte    `json:"checksum,omitempty"`
+	Contents   []byte    `json:"contents,omitempty"`
 }
 
 func (sfi StateFileInfo) Name() string       { return sfi.RawName }

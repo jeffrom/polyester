@@ -82,6 +82,7 @@ func (s State) Changed(other State) bool {
 type StateEntry struct {
 	Name string               `json:"name"`
 	File *opfs.StateFileEntry `json:"file,omitempty"`
+	KV   map[string]string    `json:"kv,omitempty"`
 }
 
 type stateEntries []StateEntry
