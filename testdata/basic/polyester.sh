@@ -1,4 +1,5 @@
 #!/bin/sh
 set -eux
 
-polyester pkg apps/ergo
+polyester plan apps/ergo
+polyester plan apps/touchy

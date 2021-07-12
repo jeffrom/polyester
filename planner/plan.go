@@ -16,7 +16,8 @@ import (
 )
 
 type Plan struct {
-	Operations []operator.Interface
+	Operations   []operator.Interface `json:"operations"`
+	Dependencies []Plan               `json:"dependencies,omitempty"`
 }
 
 func ReadFile(p string) (*Plan, error) {

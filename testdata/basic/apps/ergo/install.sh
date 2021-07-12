@@ -16,11 +16,11 @@ polyester git-repo \
 polyester make --dir ~appuser/repos/ergo
 polyester make --dir ~appuser/repos/ergo install
 
-polyester pcopy ergo.yaml /etc/ergo/
+polyester copy ergo.yaml /etc/ergo/
 
 polyester systemd-unit ergo.service \
     --workdir ~appuser/apps/ergo \
-    --service-template systemd/unit.service
+    --template systemd/unit.service
     # --exec-start-template systemd/unit-start
 
 # polyester shell

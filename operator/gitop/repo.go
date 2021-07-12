@@ -111,7 +111,7 @@ func (op Repo) GetState(octx operator.Context) (operator.State, error) {
 			cmd.Stdout = os.Stdout
 			cmd.Stderr = os.Stderr
 		}
-		fmt.Println("+ git", cmd.Args)
+		// fmt.Println("+ git", cmd.Args)
 		if err := cmd.Run(); err != nil {
 			return st, err
 		}
@@ -155,7 +155,7 @@ func (op Repo) Run(octx operator.Context) error {
 		if opts.Ref != "" {
 			args = append(args, "--branch", opts.Ref)
 		}
-		fmt.Println("+ git", args)
+		// fmt.Println("+ git", args)
 		cmd := exec.CommandContext(ctx, "git", args...)
 		if isatty.IsTerminal(os.Stdout.Fd()) {
 			cmd.Stdin = os.Stdin

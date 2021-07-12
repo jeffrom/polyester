@@ -49,29 +49,18 @@ func (r *Planner) Apply(ctx context.Context, opts ApplyOpts) (Result, error) {
 	}
 
 	octx := operator.NewContext(ctx, opfs.New(dirRoot))
-
-	// prevst, err := r.readPrevState(octx, plan, opts.StateDir)
-	// if err != nil {
-	// 	return Result{}, err
-	// }
-
-	// st, err := r.gatherState(octx, plan)
-	// if err != nil {
-	// 	return Result{}, err
-	// }
-
-	// fmt.Printf("gathered state: %+v\n", st)
-	// if _, err := st.WriteTo(os.Stdout); err != nil {
-	// 	return Result{}, err
-	// }
-
 	if err := r.executePlan(octx, plan, opts.StateDir); err != nil {
 		return Result{}, err
 	}
 
+	if err := os.RemoveAll(tmpDir); err != nil {
+		return Result{}, err
+	}
 	return Result{}, nil
 }
 
+// compilePlan writes a single plan, and any of its dependencies, into the
+// local filesystem.
 func (r *Planner) compilePlan(ctx context.Context, planb []byte) (string, error) {
 	tmpDir, err := ioutil.TempDir("", "polyester")
 	if err != nil {
@@ -102,7 +91,7 @@ func (r *Planner) compilePlan(ctx context.Context, planb []byte) (string, error)
 				continue
 			}
 
-			environ[i] = env + ":" + dir
+			environ[i] = dir + ":" + env
 			fmt.Println("set $PATH=", environ[i])
 			found = true
 			break
