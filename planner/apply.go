@@ -11,6 +11,9 @@ import (
 	"strings"
 
 	"github.com/mattn/go-isatty"
+
+	"github.com/jeffrom/polyester/operator"
+	"github.com/jeffrom/polyester/operator/opfs"
 )
 
 type ApplyOpts struct {
@@ -35,6 +38,17 @@ func (r *Planner) Apply(ctx context.Context, opts ApplyOpts) (Result, error) {
 		return Result{}, err
 	}
 	fmt.Printf("plan(%d): %+v\n", len(plan.Operations), plan)
+	dirRoot := opts.DirRoot
+	if dirRoot == "" {
+		dirRoot = "/"
+	}
+
+	octx := operator.NewContext(ctx, opfs.New(dirRoot))
+
+	_, err = r.gatherState(octx, plan)
+	if err != nil {
+		return Result{}, err
+	}
 	return Result{}, nil
 }
 
@@ -94,4 +108,8 @@ func (r *Planner) compilePlan(ctx context.Context, planb []byte) (string, error)
 		return tmpDir, err
 	}
 	return tmpDir, nil
+}
+
+func (r *Planner) gatherState(octx operator.Context, plan *Plan) (operator.State, error) {
+	return operator.State{}, nil
 }

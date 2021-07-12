@@ -48,6 +48,9 @@ func ReadFile(p string) (*Plan, error) {
 		if _, err := buf.Write(line); err != nil {
 			return nil, err
 		}
+		if _, err := buf.Write([]byte("\n")); err != nil {
+			return nil, err
+		}
 		// fmt.Printf("raw line (total: %d): %s\n", buf.Len(), string(line))
 	}
 	if err := sc.Err(); err != nil {
@@ -69,10 +72,12 @@ func opFromBuf(buf *bytes.Buffer) (operator.Interface, error) {
 	if len(b) == 0 {
 		return nil, nil
 	}
+	// fmt.Printf("omg %s\n", string(b))
 	entry := &operator.PlanEntry{}
 	if err := yaml.Unmarshal(b, entry); err != nil {
 		return nil, err
 	}
+	// fmt.Printf("omg %+v\n", entry)
 	opc, ok := allOps[entry.Name]
 	if !ok {
 		return nil, fmt.Errorf("did not find operation %q", entry.Name)

@@ -12,9 +12,17 @@ type Context struct {
 	FS   FS
 }
 
+func NewContext(ctx context.Context, fs FS) Context {
+	return Context{
+		Context: ctx,
+		FS:      fs,
+	}
+}
+
 type FS interface {
 	fs.StatFS
 	fs.GlobFS
 	fs.ReadDirFS
 	fs.ReadFileFS
+	Abs(name string) string
 }

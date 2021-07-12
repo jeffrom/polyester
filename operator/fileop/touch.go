@@ -37,7 +37,24 @@ mtime`,
 
 func (op Touch) GetState(octx operator.Context) (operator.State, error) {
 	st := operator.State{}
-	// st = st.Append()
+	opts := op.Info().Data().Command.Target.(*TouchOpts)
+	f, err := octx.FS.Open(opts.Path)
+	if err != nil {
+		return st, err
+	}
+	info, err := octx.FS.Stat(opts.Path)
+	if err != nil {
+		return st, err
+	}
+
+	st = st.Append(operator.StateEntry{
+		Name: opts.Path,
+		File: &operator.StateFileEntry{
+			File: f,
+			Abs:  octx.FS.Abs(opts.Path),
+			Info: info,
+		},
+	})
 	return st, nil
 }
 

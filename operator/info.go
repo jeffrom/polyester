@@ -1,6 +1,7 @@
 package operator
 
 import (
+	"encoding/json"
 	"io"
 
 	"github.com/ghodss/yaml"
@@ -32,22 +33,23 @@ func (id *InfoData) TextSummary(w io.Writer) error {
 }
 
 func (id *InfoData) Encode(w io.Writer) error {
+	targetb, err := json.Marshal(id.Command.Target)
+	if err != nil {
+		return err
+	}
 	pe := &PlanEntry{
 		Name: id.Name(),
-		Args: id.Command.Target,
+		Args: targetb,
 	}
 	b, err := yaml.Marshal(pe)
 	if err != nil {
 		return err
 	}
 
-	if _, err := w.Write([]byte("---\n")); err != nil {
-		return err
-	}
 	if _, err := w.Write(b); err != nil {
 		return err
 	}
-	if _, err := w.Write([]byte("\n")); err != nil {
+	if _, err := w.Write([]byte("---\n")); err != nil {
 		return err
 	}
 	return nil
@@ -62,6 +64,6 @@ type Command struct {
 }
 
 type PlanEntry struct {
-	Name string      `json:"name"`
-	Args interface{} `json:"args,omitempty"`
+	Name string          `json:"name"`
+	Args json.RawMessage `json:"args,omitempty"`
 }
