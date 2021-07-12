@@ -78,6 +78,19 @@ func (p Plan) TextSummary(w io.Writer) error {
 	return bw.Flush()
 }
 
+// func (p *Plan) resolve() error {
+// 	for _, op := range p.Operations {
+// 		name := op.Info().Name()
+// 		switch name {
+// 		case "plan":
+
+// 		case "dependency":
+
+// 		}
+// 	}
+// 	return nil
+// }
+
 func opFromBuf(buf *bytes.Buffer) (operator.Interface, error) {
 	defer buf.Reset()
 	b := buf.Bytes()

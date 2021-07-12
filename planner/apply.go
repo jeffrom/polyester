@@ -28,13 +28,13 @@ func (r *Planner) Apply(ctx context.Context, opts ApplyOpts) (Result, error) {
 		return Result{}, err
 	}
 
-	tmpDir, err := r.compilePlan(ctx, pb)
+	tmpDir, err := r.compileMainPlan(ctx, pb)
 	if err != nil {
 		return Result{}, err
 	}
 	fmt.Println("tmpdir:", tmpDir)
 
-	plan, err := ReadFile(filepath.Join(tmpDir, "plan"))
+	plan, err := ReadFile(filepath.Join(tmpDir, "plan.yaml"))
 	if err != nil {
 		return Result{}, err
 	}
@@ -59,47 +59,62 @@ func (r *Planner) Apply(ctx context.Context, opts ApplyOpts) (Result, error) {
 	return Result{}, nil
 }
 
-// compilePlan writes a single plan, and any of its dependencies, into the
+// compileMainPlan writes a single plan, and any of its dependencies, into the
 // local filesystem.
-func (r *Planner) compilePlan(ctx context.Context, planb []byte) (string, error) {
+func (r *Planner) compileMainPlan(ctx context.Context, planb []byte) (string, error) {
 	tmpDir, err := ioutil.TempDir("", "polyester")
 	if err != nil {
 		return "", err
 	}
 
-	scriptFile := filepath.Join(tmpDir, "plan-script.sh")
-	if err := ioutil.WriteFile(scriptFile, planb, 0700); err != nil {
+	if err := r.execPlanDeclaration(ctx, tmpDir, "plan", planb); err != nil {
 		return tmpDir, err
 	}
+	return tmpDir, nil
+}
 
-	tmpPlanFile := filepath.Join(tmpDir, "plan")
-	environ := []string{
-		fmt.Sprintf("_POLY_PLAN=%s", tmpPlanFile),
+func (r *Planner) execPlanDeclaration(ctx context.Context, dir, name string, planb []byte) error {
+	if err := os.MkdirAll(filepath.Join(dir, "_scripts"), 0700); err != nil {
+		return err
 	}
-	if _, err := exec.LookPath("polyester"); err != nil {
-		abs, err := filepath.Abs(os.Args[0])
-		if err != nil {
-			return "", err
-		}
-		dir, _ := filepath.Split(abs)
-		dir = filepath.Clean(dir)
-		found := false
-		for i, env := range environ {
-			parts := strings.SplitN(env, "=", 2)
-			key := parts[0]
-			if key != "PATH" {
-				continue
-			}
+	scriptFile := filepath.Join(dir, "_scripts", name+".sh")
+	if err := ioutil.WriteFile(scriptFile, planb, 0700); err != nil {
+		return err
+	}
 
-			environ[i] = dir + ":" + env
-			fmt.Println("set $PATH=", environ[i])
-			found = true
-			break
+	var planFile string
+	if name == "plan" {
+		// main plan case
+		planFile = filepath.Join(dir, "plan.yaml")
+	} else {
+		planFile = filepath.Join(dir, "plans", name+".yaml")
+	}
+
+	environ := []string{
+		fmt.Sprintf("_POLY_PLAN=%s", planFile),
+	}
+	// make sure we're using the current polyester binary for compilation
+	abs, err := filepath.Abs(os.Args[0])
+	if err != nil {
+		return err
+	}
+	selfDir, _ := filepath.Split(abs)
+	selfDir = filepath.Clean(selfDir)
+	found := false
+	for i, env := range environ {
+		parts := strings.SplitN(env, "=", 2)
+		key := parts[0]
+		if key != "PATH" {
+			continue
 		}
 
-		if !found {
-			environ = append(environ, "PATH="+dir)
-		}
+		environ[i] = selfDir + ":" + env
+		fmt.Println("set $PATH=", environ[i])
+		found = true
+		break
+	}
+	if !found {
+		environ = append(environ, "PATH="+selfDir)
 	}
 
 	cmd := exec.CommandContext(ctx, scriptFile)
@@ -110,32 +125,15 @@ func (r *Planner) compilePlan(ctx context.Context, planb []byte) (string, error)
 		cmd.Stderr = os.Stderr
 	}
 
-	if err := cmd.Start(); err != nil {
-		return tmpDir, err
+	if err := cmd.Run(); err != nil {
+		return err
 	}
-	if err := cmd.Wait(); err != nil {
-		return tmpDir, err
-	}
-	return tmpDir, nil
+	return nil
 }
 
-// func (r *Planner) readPrevState(octx operator.Context, op operator.Interface, stateDir string) (operator.State, error) {
-// 	st := operator.State{}
-
-// 	return st, nil
-// }
-
-// func (r *Planner) gatherState(octx operator.Context, plan *Plan) (operator.State, error) {
-// 	st := operator.State{}
-// 	for _, op := range plan.Operations {
-// 		nextSt, err := op.GetState(octx)
-// 		if err != nil {
-// 			return st, err
-// 		}
-// 		st = st.Append(nextSt.Entries...)
-// 	}
-// 	return st, nil
-// }
+func (r *Planner) resolvePlan(ctx context.Context, dir string) error {
+	return nil
+}
 
 func (r *Planner) executePlan(octx operator.Context, plan *Plan, stateDir string) error {
 	dirty := false
