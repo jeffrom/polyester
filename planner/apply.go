@@ -13,17 +13,28 @@ import (
 	"github.com/mattn/go-isatty"
 )
 
-func (r *Planner) Apply(ctx context.Context) (Result, error) {
+type ApplyOpts struct {
+	Plan    string
+	DirRoot string
+}
+
+func (r *Planner) Apply(ctx context.Context, opts ApplyOpts) (Result, error) {
 	pb, err := fs.ReadFile(os.DirFS(r.rootDir), r.getPlanFile())
 	if err != nil {
 		return Result{}, err
 	}
 
-	tmpPlan, err := r.compilePlan(ctx, pb)
+	tmpDir, err := r.compilePlan(ctx, pb)
 	if err != nil {
 		return Result{}, err
 	}
-	fmt.Println("tmp plan:", tmpPlan)
+	fmt.Println("tmpdir:", tmpDir)
+
+	plan, err := ReadFile(filepath.Join(tmpDir, "plan"))
+	if err != nil {
+		return Result{}, err
+	}
+	fmt.Printf("plan(%d): %+v\n", len(plan.Operations), plan)
 	return Result{}, nil
 }
 

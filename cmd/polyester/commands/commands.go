@@ -15,8 +15,10 @@ import (
 
 func ExecArgs(ctx context.Context, args []string) error {
 	rootCmd := &cobra.Command{
-		Use:  "polyester",
-		Args: cobra.RangeArgs(0, 1),
+		Use:           "polyester",
+		Args:          cobra.RangeArgs(0, 1),
+		SilenceErrors: true, // we are printing errors ourselves
+		SilenceUsage:  true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			dir := ""

@@ -8,23 +8,9 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"sync"
 
-	"github.com/jeffrom/polyester/operator"
 	"github.com/jeffrom/polyester/planner/shell"
 )
-
-var (
-	allOps      map[string]operator.Interface
-	allOptsOnce = sync.Once{}
-)
-
-func setupAllOps() {
-	allOps = make(map[string]operator.Interface)
-	for _, op := range Operators() {
-		allOps[op.Info().Name()] = op
-	}
-}
 
 type Planner struct {
 	rootDir  string

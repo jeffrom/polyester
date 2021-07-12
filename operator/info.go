@@ -18,6 +18,12 @@ type InfoData struct {
 	Command *Command `json:"command"`
 }
 
+func (id *InfoData) Copy() *InfoData {
+	cp := *id
+	cp.Command = &*id.Command
+	return &cp
+}
+
 func (id *InfoData) Data() *InfoData { return id }
 func (id *InfoData) Name() string    { return id.OpName }
 func (id *InfoData) TextSummary(w io.Writer) error {

@@ -7,8 +7,9 @@ import (
 )
 
 func newApplyCmd() *cobra.Command {
+	opts := planner.ApplyOpts{}
 	cmd := &cobra.Command{
-		Use:   "apply [PLAN...]",
+		Use:   "apply [plan...]",
 		Short: "read, check, and execute plans",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
@@ -26,10 +27,14 @@ func newApplyCmd() *cobra.Command {
 				return err
 			}
 
-			_, err = pl.Apply(ctx)
+			_, err = pl.Apply(ctx, opts)
 			return err
 		},
 	}
+
+	flags := cmd.Flags()
+	flags.StringVar(&opts.DirRoot, "dir-root", "/", "use as root directory")
+	flags.StringVarP(&opts.Plan, "plan-file", "f", "", "apply a pre-compiled plan")
 
 	return cmd
 }

@@ -19,8 +19,8 @@ func (op Touch) Info() operator.Info {
 		Use:   "touch FILE",
 		Args:  cobra.ExactArgs(1),
 		Short: "creates or updates the mtime of FILE",
-		Long: `Create a file if it doesn't already exist, or update the file's
-mtime if it already exists.`,
+		Long: `Create a file if it doesn't already exist, otherwise update the file's
+mtime`,
 	}
 	flags := cmd.Flags()
 	flags.Uint32VarP(&opts.Mode, "mode", "m", 0644, "the mode to set the file to")
@@ -36,11 +36,12 @@ mtime if it already exists.`,
 }
 
 func (op Touch) GetState(octx operator.Context) (operator.State, error) {
-	return operator.State{}, nil
+	st := operator.State{}
+	// st = st.Append()
+	return st, nil
 }
 
 func (op Touch) Run(octx operator.Context) error {
-
 	return nil
 }
 

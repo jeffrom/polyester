@@ -6,10 +6,10 @@ import (
 )
 
 type State struct {
-	entries []stateEntry
+	entries []StateEntry
 }
 
-func (s State) Append(next ...stateEntry) State {
+func (s State) Append(next ...StateEntry) State {
 	entries := append(s.entries, next...)
 	return State{entries: entries}
 }
@@ -23,18 +23,18 @@ func (s State) Changed(other State) bool {
 
 	for i, ent := range s.entries {
 		oent := other.entries[i]
-		if ent.name != oent.name {
+		if ent.Name != oent.Name {
 			return true
 		}
 
-		if (ent.file == nil) != (oent.file == nil) {
+		if (ent.File == nil) != (oent.File == nil) {
 			return true
 		}
-		if ent.file != nil {
-			sf, of := ent.file, oent.file
-			if sf.abs != of.abs ||
-				sf.info.IsDir() != of.info.IsDir() ||
-				sf.info.Mode().Perm() != of.info.Mode().Perm() {
+		if ent.File != nil {
+			sf, of := ent.File, oent.File
+			if sf.Abs != of.Abs ||
+				sf.Info.IsDir() != of.Info.IsDir() ||
+				sf.Info.Mode().Perm() != of.Info.Mode().Perm() {
 				return true
 			}
 		}
@@ -43,18 +43,18 @@ func (s State) Changed(other State) bool {
 	return false
 }
 
-type stateEntry struct {
-	name string
-	file *stateFileEntry
+type StateEntry struct {
+	Name string
+	File *StateFileEntry
 }
 
-type stateFileEntry struct {
-	abs  string
-	f    fs.File
-	info fs.FileInfo
+type StateFileEntry struct {
+	fs.File
+	Abs  string
+	Info fs.FileInfo
 }
 
-type stateEntries []stateEntry
+type stateEntries []StateEntry
 
 func (se stateEntries) Len() int {
 	return len(se)
@@ -65,5 +65,5 @@ func (se stateEntries) Swap(i, j int) {
 }
 
 func (se stateEntries) Less(i, j int) bool {
-	return se[i].name < se[j].name
+	return se[i].Name < se[j].Name
 }
