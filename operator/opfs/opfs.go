@@ -46,3 +46,7 @@ func (fs FS) Glob(pattern string) ([]string, error) {
 func (fs FS) Abs(name string) string {
 	return filepath.Clean(filepath.Join(fs.root, name))
 }
+
+func (fs FS) Join(paths ...string) string {
+	return filepath.Join(append([]string{fs.root}, paths...)...)
+}

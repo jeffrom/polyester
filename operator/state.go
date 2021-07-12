@@ -1,28 +1,60 @@
 package operator
 
 import (
-	"io/fs"
+	"bufio"
+	"encoding/json"
+	"io"
+	"os"
 	"sort"
+
+	"github.com/jeffrom/polyester/operator/opfs"
 )
 
 type State struct {
-	entries []StateEntry
+	Entries []StateEntry `json:"entries"`
+}
+
+// func NewStateFromPath(p string) (State, error) {
+// }
+
+func (s State) WriteFile(p string) error {
+	f, err := os.Create(p)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	_, err = s.WriteTo(f)
+	return err
+}
+
+func (s State) WriteTo(w io.Writer) (int64, error) {
+	bw := bufio.NewWriter(w)
+	b, err := json.Marshal(s)
+	if err != nil {
+		return 0, err
+	}
+	if _, err := bw.Write(b); err != nil {
+		return int64(bw.Size()), err
+	}
+	return int64(bw.Size()), bw.Flush()
 }
 
 func (s State) Append(next ...StateEntry) State {
-	entries := append(s.entries, next...)
-	return State{entries: entries}
+	entries := append(s.Entries, next...)
+	return State{Entries: entries}
 }
 
+func (s State) Empty() bool { return len(s.Entries) == 0 }
+
 func (s State) Changed(other State) bool {
-	if len(s.entries) != len(other.entries) {
+	if len(s.Entries) != len(other.Entries) {
 		return true
 	}
-	sort.Sort(stateEntries(s.entries))
-	sort.Sort(stateEntries(other.entries))
+	sort.Sort(stateEntries(s.Entries))
+	sort.Sort(stateEntries(other.Entries))
 
-	for i, ent := range s.entries {
-		oent := other.entries[i]
+	for i, ent := range s.Entries {
+		oent := other.Entries[i]
 		if ent.Name != oent.Name {
 			return true
 		}
@@ -32,9 +64,13 @@ func (s State) Changed(other State) bool {
 		}
 		if ent.File != nil {
 			sf, of := ent.File, oent.File
-			if sf.Abs != of.Abs ||
+			if (sf.Info == nil) != (of.Info == nil) {
+				return true
+			}
+			if sf.Info != nil &&
 				sf.Info.IsDir() != of.Info.IsDir() ||
-				sf.Info.Mode().Perm() != of.Info.Mode().Perm() {
+				sf.Info.Mode().Perm() != of.Info.Mode().Perm() ||
+				!sf.Info.ModTime().Equal(of.Info.ModTime()) {
 				return true
 			}
 		}
@@ -44,14 +80,8 @@ func (s State) Changed(other State) bool {
 }
 
 type StateEntry struct {
-	Name string
-	File *StateFileEntry
-}
-
-type StateFileEntry struct {
-	fs.File
-	Abs  string
-	Info fs.FileInfo
+	Name string               `json:"name"`
+	File *opfs.StateFileEntry `json:"file,omitempty"`
 }
 
 type stateEntries []StateEntry

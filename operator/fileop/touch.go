@@ -1,9 +1,16 @@
 package fileop
 
 import (
+	"errors"
+	"fmt"
+	"io/fs"
+	"os"
+	"path/filepath"
+
 	"github.com/spf13/cobra"
 
 	"github.com/jeffrom/polyester/operator"
+	"github.com/jeffrom/polyester/operator/opfs"
 )
 
 type TouchOpts struct {
@@ -11,10 +18,13 @@ type TouchOpts struct {
 	Path string `json:"path"`
 }
 
-type Touch struct{}
+type Touch struct {
+	Args interface{}
+}
 
 func (op Touch) Info() operator.Info {
-	opts := &TouchOpts{}
+	opts := op.Args.(*TouchOpts)
+
 	cmd := &cobra.Command{
 		Use:   "touch FILE",
 		Args:  cobra.ExactArgs(1),
@@ -36,22 +46,20 @@ mtime`,
 }
 
 func (op Touch) GetState(octx operator.Context) (operator.State, error) {
+	opts := op.Args.(*TouchOpts)
 	st := operator.State{}
-	opts := op.Info().Data().Command.Target.(*TouchOpts)
-	f, err := octx.FS.Open(opts.Path)
-	if err != nil {
-		return st, err
-	}
+	fmt.Printf("touch: GetState opts: %+v\n", opts)
 	info, err := octx.FS.Stat(opts.Path)
 	if err != nil {
-		return st, err
+		if !errors.Is(err, os.ErrNotExist) {
+			return st, err
+		}
 	}
 
 	st = st.Append(operator.StateEntry{
 		Name: opts.Path,
-		File: &operator.StateFileEntry{
-			File: f,
-			Abs:  octx.FS.Abs(opts.Path),
+		File: &opfs.StateFileEntry{
+			// File: f,
 			Info: info,
 		},
 	})
@@ -59,6 +67,26 @@ func (op Touch) GetState(octx operator.Context) (operator.State, error) {
 }
 
 func (op Touch) Run(octx operator.Context) error {
+	opts := op.Args.(*TouchOpts)
+	_, err := octx.FS.Stat(opts.Path)
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return err
+	} else if err == nil {
+		return nil
+	}
+
+	dest := octx.FS.Join(opts.Path)
+	dir, _ := filepath.Split(dest)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return err
+	}
+	f, err := os.OpenFile(dest, os.O_CREATE, fs.FileMode(opts.Mode))
+	if err != nil {
+		return err
+	}
+	if err := f.Close(); err != nil {
+		return err
+	}
 	return nil
 }
 

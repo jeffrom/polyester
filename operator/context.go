@@ -25,4 +25,5 @@ type FS interface {
 	fs.ReadDirFS
 	fs.ReadFileFS
 	Abs(name string) string
+	Join(paths ...string) string
 }

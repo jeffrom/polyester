@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/ghodss/yaml"
@@ -36,6 +37,7 @@ func ReadFile(p string) (*Plan, error) {
 			if err != nil {
 				return nil, fmt.Errorf("failed to extract operation: %w", err)
 			}
+			// fmt.Printf("after %+v\n", op.Info().Data().Command.Target)
 			if op != nil {
 				ops = append(ops, op)
 			}
@@ -66,6 +68,15 @@ func ReadFile(p string) (*Plan, error) {
 	return &Plan{Operations: ops}, nil
 }
 
+func (p Plan) TextSummary(w io.Writer) error {
+	bw := bufio.NewWriter(w)
+	bw.WriteString(fmt.Sprintf("plan (%d ops):\n", len(p.Operations)))
+	for _, op := range p.Operations {
+		fmt.Fprintf(bw, "  %s: %+v\n", op.Info().Name(), op.Info().Data().Command.Target)
+	}
+	return bw.Flush()
+}
+
 func opFromBuf(buf *bytes.Buffer) (operator.Interface, error) {
 	defer buf.Reset()
 	b := buf.Bytes()
@@ -77,15 +88,18 @@ func opFromBuf(buf *bytes.Buffer) (operator.Interface, error) {
 	if err := yaml.Unmarshal(b, entry); err != nil {
 		return nil, err
 	}
-	// fmt.Printf("omg %+v\n", entry)
+	// fmt.Printf("omg %+v\n", string(entry.Args))
 	opc, ok := allOps[entry.Name]
 	if !ok {
 		return nil, fmt.Errorf("did not find operation %q", entry.Name)
 	}
 	op := opc()
 	opData := op.Info().Data()
-	opData.Command.Target = entry.Args
-	return op, nil
+	if err := yaml.Unmarshal(entry.Args, opData.Command.Target); err != nil {
+		return nil, err
+	}
+	// fmt.Printf("omg %T %+v\n", opData.Command.Target, opData.Command.Target)
+	return operation{op: op, data: opData}, nil
 }
 
 func AppendPlan(ctx context.Context, planFile string, info operator.Info, cobraCmd *cobra.Command, args []string) error {

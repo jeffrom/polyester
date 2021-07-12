@@ -17,8 +17,9 @@ import (
 )
 
 type ApplyOpts struct {
-	Plan    string
-	DirRoot string
+	Plan     string
+	DirRoot  string
+	StateDir string
 }
 
 func (r *Planner) Apply(ctx context.Context, opts ApplyOpts) (Result, error) {
@@ -37,7 +38,11 @@ func (r *Planner) Apply(ctx context.Context, opts ApplyOpts) (Result, error) {
 	if err != nil {
 		return Result{}, err
 	}
-	fmt.Printf("plan(%d): %+v\n", len(plan.Operations), plan)
+
+	if err := plan.TextSummary(os.Stdout); err != nil {
+		return Result{}, err
+	}
+
 	dirRoot := opts.DirRoot
 	if dirRoot == "" {
 		dirRoot = "/"
@@ -45,10 +50,25 @@ func (r *Planner) Apply(ctx context.Context, opts ApplyOpts) (Result, error) {
 
 	octx := operator.NewContext(ctx, opfs.New(dirRoot))
 
-	_, err = r.gatherState(octx, plan)
-	if err != nil {
+	// prevst, err := r.readPrevState(octx, plan, opts.StateDir)
+	// if err != nil {
+	// 	return Result{}, err
+	// }
+
+	// st, err := r.gatherState(octx, plan)
+	// if err != nil {
+	// 	return Result{}, err
+	// }
+
+	// fmt.Printf("gathered state: %+v\n", st)
+	// if _, err := st.WriteTo(os.Stdout); err != nil {
+	// 	return Result{}, err
+	// }
+
+	if err := r.executePlan(octx, plan, opts.StateDir); err != nil {
 		return Result{}, err
 	}
+
 	return Result{}, nil
 }
 
@@ -110,6 +130,57 @@ func (r *Planner) compilePlan(ctx context.Context, planb []byte) (string, error)
 	return tmpDir, nil
 }
 
-func (r *Planner) gatherState(octx operator.Context, plan *Plan) (operator.State, error) {
-	return operator.State{}, nil
+// func (r *Planner) readPrevState(octx operator.Context, op operator.Interface, stateDir string) (operator.State, error) {
+// 	st := operator.State{}
+
+// 	return st, nil
+// }
+
+// func (r *Planner) gatherState(octx operator.Context, plan *Plan) (operator.State, error) {
+// 	st := operator.State{}
+// 	for _, op := range plan.Operations {
+// 		nextSt, err := op.GetState(octx)
+// 		if err != nil {
+// 			return st, err
+// 		}
+// 		st = st.Append(nextSt.Entries...)
+// 	}
+// 	return st, nil
+// }
+
+func (r *Planner) executePlan(octx operator.Context, plan *Plan, stateDir string) error {
+	dirty := false
+	for _, op := range plan.Operations {
+		data := op.Info().Data()
+		prevst, err := readPrevState(data, stateDir)
+		if err != nil {
+			return err
+		}
+		st, err := op.GetState(octx)
+		if err != nil {
+			return err
+		}
+
+		prevEmpty := prevst.Empty()
+		changed := prevst.Changed(st)
+		fmt.Printf("%20s: [empty: %8v] [changed: %8v]\n", op.Info().Name(), prevst.Empty(), prevst.Changed(st))
+		if dirty || prevEmpty || changed {
+			dirty = true
+			fmt.Printf("executing %s (%+v)\n", op.Info().Name(), data.Command.Target)
+
+			if err := op.Run(octx); err != nil {
+				return err
+			}
+
+			nextSt, err := op.GetState(octx)
+			if err != nil {
+				return err
+			}
+
+			if err := saveState(data, nextSt, stateDir); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
