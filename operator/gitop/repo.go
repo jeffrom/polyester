@@ -19,9 +19,9 @@ import (
 )
 
 type RepoOpts struct {
-	Dest string
-	Ref  string
-	URL  string
+	URL  string `json:"url"`
+	Dest string `json:"dest"`
+	Ref  string `json:"ref,omitempty"`
 }
 
 type Repo struct {

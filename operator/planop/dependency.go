@@ -7,7 +7,7 @@ import (
 )
 
 type DependencyOpts struct {
-	Plans []string
+	Plans []string `json:"plans"`
 }
 
 type Dependency struct {

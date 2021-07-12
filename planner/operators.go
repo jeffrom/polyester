@@ -32,7 +32,9 @@ func opCreators() []func() operator.Interface {
 }
 
 func opCreator(op operator.Interface) func() operator.Interface {
-	return func() operator.Interface { return op }
+	return func() operator.Interface {
+		return op
+	}
 }
 
 // Operators returns a list of all available operators.

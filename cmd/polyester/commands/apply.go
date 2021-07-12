@@ -13,29 +13,32 @@ func newApplyCmd() *cobra.Command {
 		Short: "read, check, and execute plans",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-			dir := ""
+			dirs := []string{""}
 			if len(args) > 0 {
-				dir = args[0]
+				dirs = args
 			}
+			for _, dir := range dirs {
+				pl, err := planner.New(dir)
+				if err != nil {
+					return err
+				}
 
-			pl, err := planner.New(dir)
-			if err != nil {
-				return err
+				if err := pl.Check(ctx); err != nil {
+					return err
+				}
+
+				if _, err = pl.Apply(ctx, opts); err != nil {
+					return err
+				}
 			}
-
-			if err := pl.Check(ctx); err != nil {
-				return err
-			}
-
-			_, err = pl.Apply(ctx, opts)
-			return err
+			return nil
 		},
 	}
 
 	flags := cmd.Flags()
 	flags.StringVar(&opts.DirRoot, "dir-root", "/", "use as root directory")
 	flags.StringVar(&opts.StateDir, "state-dir", "/var/lib/polyester/state", "directory to track state")
-	flags.StringVarP(&opts.Plan, "plan-file", "f", "", "apply a pre-compiled plan")
+	flags.StringVarP(&opts.CompiledPlan, "plan-file", "f", "", "apply a pre-compiled plan")
 
 	return cmd
 }

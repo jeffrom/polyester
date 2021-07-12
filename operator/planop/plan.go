@@ -7,7 +7,7 @@ import (
 )
 
 type PlanOpts struct {
-	Plans []string
+	Plans []string `json:"plans"`
 }
 
 type Plan struct {

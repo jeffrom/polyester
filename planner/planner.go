@@ -15,6 +15,7 @@ import (
 type Planner struct {
 	rootDir  string
 	planFile string
+	planDir  string
 }
 
 func New(p string) (*Planner, error) {

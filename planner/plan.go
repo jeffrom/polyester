@@ -100,7 +100,7 @@ func opFromBuf(buf *bytes.Buffer) (operator.Interface, error) {
 	// fmt.Printf("omg %s\n", string(b))
 	entry := &operator.PlanEntry{}
 	if err := yaml.Unmarshal(b, entry); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to unmarshal operation entry: %w", err)
 	}
 	// fmt.Printf("omg %+v\n", string(entry.Args))
 	opc, ok := allOps[entry.Name]
@@ -109,8 +109,8 @@ func opFromBuf(buf *bytes.Buffer) (operator.Interface, error) {
 	}
 	op := opc()
 	opData := op.Info().Data()
-	if err := yaml.Unmarshal(entry.Args, opData.Command.Target); err != nil {
-		return nil, err
+	if err := yaml.Unmarshal(entry.Args, &opData.Command.Target); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal operation target: %w", err)
 	}
 	// fmt.Printf("omg %T %+v\n", opData.Command.Target, opData.Command.Target)
 	return operation{op: op, data: opData}, nil
