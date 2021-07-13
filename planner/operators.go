@@ -33,6 +33,20 @@ func opCreators() []func() operator.Interface {
 
 func opCreator(op operator.Interface) func() operator.Interface {
 	return func() operator.Interface {
+		// TODO need to reset the pointer to the address of a new zeroed
+		// instance of the struct
+		// data := op.Info().Data()
+		// targ := data.Command.Target       // *struct{}
+		// targVal := reflect.ValueOf(&targ) // **struct{}
+		// targElem := targVal.Elem()        // *struct{}
+		// resetElem := reflect.New(reflect.TypeOf(targ)).Elem()
+		// targElem.Set(resetElem)
+
+		// fmt.Printf(" val: %p %T %+v\n", &targVal, targVal, targVal)
+		// fmt.Printf("elem: %p %T %+v\n", &targElem, targElem, targElem)
+		// fmt.Printf("res: %p %+v\n", &data.Command.Target, data.Command.Target)
+		// reflect.ValueOf(targ).Set(reflect.ValueOf(targ).Elem())
+
 		return op
 	}
 }
