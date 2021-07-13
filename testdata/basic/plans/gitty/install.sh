@@ -10,4 +10,4 @@ polyester git-repo \
 polyester sh \
     --dir /tmp/tunk \
     --target tunk \
-    "make"
+    "make build"
