@@ -24,11 +24,29 @@ type ApplyOpts struct {
 	StateDir     string
 }
 
-func (r *Planner) Apply(ctx context.Context, opts ApplyOpts) (*Result, error) {
-	dirRoot := opts.DirRoot
+func (o ApplyOpts) WithDefaults() ApplyOpts {
+	dirRoot := o.DirRoot
 	if dirRoot == "" {
 		dirRoot = "/"
-		opts.DirRoot = dirRoot
+	}
+
+	stateDir := o.StateDir
+	if stateDir == "" {
+		stateDir = "/var/lib/polyester/state"
+	}
+
+	return ApplyOpts{
+		Dryrun:       o.Dryrun,
+		CompiledPlan: o.CompiledPlan,
+		DirRoot:      dirRoot,
+		StateDir:     stateDir,
+	}
+}
+
+func (r *Planner) Apply(ctx context.Context, opts ApplyOpts) (*Result, error) {
+	opts = opts.WithDefaults()
+	if err := os.MkdirAll(opts.StateDir, 0700); err != nil {
+		return nil, err
 	}
 	pfPath := r.getPlanFile()
 	pb, err := fs.ReadFile(os.DirFS(r.rootDir), pfPath)
@@ -46,10 +64,6 @@ func (r *Planner) Apply(ctx context.Context, opts ApplyOpts) (*Result, error) {
 		return nil, err
 	}
 	fmt.Println("tmpdir:", tmpDir)
-
-	// if err := plan.TextSummary(os.Stdout); err != nil {
-	// 	return nil, err
-	// }
 
 	res, err := r.executeManifest(ctx, plan, opts)
 	if err != nil {
@@ -136,7 +150,8 @@ func (r *Planner) execPlanDeclaration(ctx context.Context, dir, name string, pla
 		break
 	}
 	if !found {
-		environ = append(environ, "PATH="+selfDir)
+		pathEnv := fmt.Sprintf("PATH=%s:/bin:/usr/bin:/usr/local/bin", selfDir)
+		environ = append(environ, pathEnv)
 	}
 
 	cmd := exec.CommandContext(ctx, scriptFile)

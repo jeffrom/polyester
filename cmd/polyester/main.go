@@ -8,8 +8,6 @@ import (
 	"github.com/jeffrom/polyester/cmd/polyester/commands"
 )
 
-var ShareDir = "/var/lib/polyester"
-
 func main() {
 	if err := run(os.Args); err != nil {
 		fmt.Fprintln(os.Stderr, "Error:", err)
