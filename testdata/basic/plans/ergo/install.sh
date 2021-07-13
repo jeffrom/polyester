@@ -3,7 +3,6 @@ set -eux
 
 polyester apt-install git
 
-polyester touch --mode 0600 /tmp/hello
 polyester useradd --create-home --shell /bin/sh appuser
 
 polyester git-repo \

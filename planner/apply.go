@@ -18,12 +18,18 @@ import (
 )
 
 type ApplyOpts struct {
+	Dryrun       bool
 	CompiledPlan string
 	DirRoot      string
 	StateDir     string
 }
 
 func (r *Planner) Apply(ctx context.Context, opts ApplyOpts) (*Result, error) {
+	dirRoot := opts.DirRoot
+	if dirRoot == "" {
+		dirRoot = "/"
+		opts.DirRoot = dirRoot
+	}
 	pfPath := r.getPlanFile()
 	pb, err := fs.ReadFile(os.DirFS(r.rootDir), pfPath)
 	if err != nil {
@@ -45,12 +51,7 @@ func (r *Planner) Apply(ctx context.Context, opts ApplyOpts) (*Result, error) {
 	// 	return nil, err
 	// }
 
-	dirRoot := opts.DirRoot
-	if dirRoot == "" {
-		dirRoot = "/"
-	}
-
-	res, err := r.executeManifest(ctx, plan, dirRoot, opts.StateDir)
+	res, err := r.executeManifest(ctx, plan, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -223,7 +224,8 @@ func (r *Planner) resolveOnePlan(ctx context.Context, plan *Plan, dir string, al
 	return nil
 }
 
-func (r *Planner) executeManifest(ctx context.Context, plan *Plan, dirRoot, stateDir string) (*Result, error) {
+func (r *Planner) executeManifest(ctx context.Context, plan *Plan, opts ApplyOpts) (*Result, error) {
+	dirRoot := opts.DirRoot
 	all, err := plan.All()
 	if err != nil {
 		return nil, err
@@ -233,7 +235,7 @@ func (r *Planner) executeManifest(ctx context.Context, plan *Plan, dirRoot, stat
 	finalRes := &Result{}
 	for _, subplan := range all {
 		// fmt.Println("executeManifest", subplan.Name)
-		res, err := r.executePlan(octx, subplan, stateDir)
+		res, err := r.executePlan(octx, subplan, opts)
 		if err != nil {
 			return finalRes, err
 		}
@@ -246,14 +248,14 @@ func (r *Planner) executeManifest(ctx context.Context, plan *Plan, dirRoot, stat
 }
 
 // executePlan runs a single plan
-func (r *Planner) executePlan(octx operator.Context, plan *Plan, stateDir string) (*PlanResult, error) {
+func (r *Planner) executePlan(octx operator.Context, plan *Plan, opts ApplyOpts) (*PlanResult, error) {
 	if err := plan.TextSummary(os.Stdout); err != nil {
 		return nil, err
 	}
 	dirty := false
 	finalRes := &PlanResult{Name: plan.Name}
 	for _, op := range plan.Operations {
-		res, err := r.executeOperation(octx, op, stateDir, dirty)
+		res, err := r.executeOperation(octx, op, opts, dirty)
 		if err != nil {
 			return nil, err
 		}
@@ -271,7 +273,8 @@ func (r *Planner) executePlan(octx operator.Context, plan *Plan, stateDir string
 	return finalRes, nil
 }
 
-func (r *Planner) executeOperation(octx operator.Context, op operator.Interface, stateDir string, dirty bool) (*OperationResult, error) {
+func (r *Planner) executeOperation(octx operator.Context, op operator.Interface, opts ApplyOpts, dirty bool) (*OperationResult, error) {
+	stateDir := opts.StateDir
 	info := op.Info()
 	name := info.Name()
 	// skip planops because planner handles running them outside this context
@@ -299,20 +302,26 @@ func (r *Planner) executeOperation(octx operator.Context, op operator.Interface,
 	res.Changed = changed
 	res.Dirty = dirty
 	if dirty {
-		fmt.Printf("-> execute %s (%+v)\n", op.Info().Name(), data.Command.Target)
-
-		if err := op.Run(octx); err != nil {
-			return nil, err
+		dryrunLabel := ""
+		if opts.Dryrun {
+			dryrunLabel = " (dryrun)"
 		}
+		fmt.Printf("-> execute %s%s (%+v)\n", op.Info().Name(), dryrunLabel, data.Command.Target)
 
-		nextSt, err := op.GetState(octx.WithGotState(true))
-		if err != nil {
-			return nil, err
-		}
-		res.nextState = nextSt
+		if !opts.Dryrun {
+			if err := op.Run(octx); err != nil {
+				return nil, err
+			}
 
-		if err := saveState(data, nextSt, stateDir); err != nil {
-			return nil, err
+			nextSt, err := op.GetState(octx.WithGotState(true))
+			if err != nil {
+				return nil, err
+			}
+			res.nextState = nextSt
+
+			if err := saveState(data, nextSt, stateDir); err != nil {
+				return nil, err
+			}
 		}
 	}
 	return res, nil

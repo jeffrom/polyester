@@ -48,6 +48,7 @@ func newApplyCmd() *cobra.Command {
 	}
 
 	flags := cmd.Flags()
+	flags.BoolVarP(&opts.Dryrun, "dry-run", "n", false, "make no changes")
 	flags.StringVar(&opts.DirRoot, "dir-root", "/", "use as root directory")
 	flags.StringVar(&opts.StateDir, "state-dir", "/var/lib/polyester/state", "directory to track state")
 	flags.StringVarP(&opts.CompiledPlan, "plan-file", "f", "", "apply a pre-compiled plan")
