@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -153,14 +154,35 @@ func sortPlans(plans []*Plan) ([]*Plan, error) {
 			deps[name] = diffm
 		}
 	}
+
+	idx := -1
+	for i, plan := range resolved {
+		if plan.Name == "plan" {
+			idx = i
+			break
+		}
+	}
+	if idx >= 0 {
+		main := resolved[idx]
+		resolved = append(resolved[:idx], resolved[idx+1:]...)
+		resolved = append(resolved, main)
+	}
 	return resolved, nil
 }
 
 func (p Plan) TextSummary(w io.Writer) error {
 	bw := bufio.NewWriter(w)
-	bw.WriteString(fmt.Sprintf("plan (%d ops):\n", len(p.Operations)))
+	name := p.Name
+	if name == "plan" {
+		name = "main plan"
+	}
+	bw.WriteString(fmt.Sprintf("%s (%d ops):\n", name, len(p.Operations)))
 	for _, op := range p.Operations {
-		fmt.Fprintf(bw, "  %s: %+v\n", op.Info().Name(), op.Info().Data().Command.Target)
+		b, err := json.Marshal(op.Info().Data().Command.Target)
+		if err != nil {
+			return err
+		}
+		fmt.Fprintf(bw, "  %s: %s\n", op.Info().Name(), string(b))
 	}
 	return bw.Flush()
 }

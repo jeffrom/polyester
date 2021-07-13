@@ -41,9 +41,9 @@ func (r *Planner) Apply(ctx context.Context, opts ApplyOpts) (*Result, error) {
 	}
 	fmt.Println("tmpdir:", tmpDir)
 
-	if err := plan.TextSummary(os.Stdout); err != nil {
-		return nil, err
-	}
+	// if err := plan.TextSummary(os.Stdout); err != nil {
+	// 	return nil, err
+	// }
 
 	dirRoot := opts.DirRoot
 	if dirRoot == "" {
@@ -182,7 +182,9 @@ func (r *Planner) resolveOnePlan(ctx context.Context, plan *Plan, dir string, al
 		case "dependency":
 			planNames = targ.(*planop.DependencyOpts).Plans
 		}
-		fmt.Printf("resolving plan(s): %v\n", planNames)
+		if len(planNames) > 0 {
+			fmt.Printf("resolving plan(s): %v\n", planNames)
+		}
 		for _, planName := range planNames {
 			planb, err := os.ReadFile(filepath.Join(r.planDir, "plans", planName, "install.sh"))
 			if err != nil {
@@ -222,12 +224,13 @@ func (r *Planner) resolveOnePlan(ctx context.Context, plan *Plan, dir string, al
 }
 
 func (r *Planner) executeManifest(ctx context.Context, plan *Plan, dirRoot, stateDir string) (*Result, error) {
-	finalRes := &Result{}
-	octx := operator.NewContext(ctx, opfs.New(dirRoot))
 	all, err := plan.All()
 	if err != nil {
 		return nil, err
 	}
+
+	octx := operator.NewContext(ctx, opfs.New(dirRoot))
+	finalRes := &Result{}
 	for _, subplan := range all {
 		// fmt.Println("executeManifest", subplan.Name)
 		res, err := r.executePlan(octx, subplan, stateDir)
@@ -239,19 +242,14 @@ func (r *Planner) executeManifest(ctx context.Context, plan *Plan, dirRoot, stat
 		}
 	}
 
-	// if the main plan has any operations, run 'em last
-	// res, err := r.executePlan(octx, plan, stateDir)
-	// if err != nil {
-	// 	return finalRes, err
-	// }
-	// if res != nil {
-	// 	finalRes.Plans = append(finalRes.Plans, res)
-	// }
 	return finalRes, nil
 }
 
 // executePlan runs a single plan
 func (r *Planner) executePlan(octx operator.Context, plan *Plan, stateDir string) (*PlanResult, error) {
+	if err := plan.TextSummary(os.Stdout); err != nil {
+		return nil, err
+	}
 	dirty := false
 	finalRes := &PlanResult{Name: plan.Name}
 	for _, op := range plan.Operations {
