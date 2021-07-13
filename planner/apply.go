@@ -50,11 +50,7 @@ func (r *Planner) Apply(ctx context.Context, opts ApplyOpts) (Result, error) {
 		dirRoot = "/"
 	}
 
-	// if err := r.executeManifest(ctx, plan, opts.StateDir); err != nil {
-	// 	return Result{}, err
-	// }
-	octx := operator.NewContext(ctx, opfs.New(dirRoot))
-	if err := r.executePlan(octx, plan, opts.StateDir); err != nil {
+	if err := r.executeManifest(ctx, plan, dirRoot, opts.StateDir); err != nil {
 		return Result{}, err
 	}
 
@@ -183,6 +179,17 @@ func (r *Planner) resolvePlan(ctx context.Context, dir string) (*Plan, error) {
 			if err := r.execPlanDeclaration(ctx, dir, planName, planb); err != nil {
 				return nil, fmt.Errorf("failed to compile plan %q: %w", planName, err)
 			}
+
+			subplan, err := ReadFile(filepath.Join(dir, "plans", planName+".yaml"))
+			if err != nil {
+				return nil, err
+			}
+			switch name {
+			case "plan":
+				plan.Plans = append(plan.Plans, subplan)
+			case "dependency":
+				plan.Dependencies = append(plan.Dependencies, subplan)
+			}
 		}
 	}
 	return plan, nil
@@ -190,6 +197,13 @@ func (r *Planner) resolvePlan(ctx context.Context, dir string) (*Plan, error) {
 
 func (r *Planner) executeManifest(ctx context.Context, plan *Plan, dirRoot, stateDir string) error {
 	octx := operator.NewContext(ctx, opfs.New(dirRoot))
+	for _, subplan := range plan.Plans {
+		if err := r.executePlan(octx, subplan, stateDir); err != nil {
+			return err
+		}
+	}
+
+	// if the main plan has any operations, run 'em
 	if err := r.executePlan(octx, plan, stateDir); err != nil {
 		return err
 	}
