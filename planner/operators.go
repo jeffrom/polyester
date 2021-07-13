@@ -24,30 +24,10 @@ func setupAllOps() {
 
 func opCreators() []func() operator.Interface {
 	return []func() operator.Interface{
-		opCreator(planop.Plan{Args: &planop.PlanOpts{}}),
-		opCreator(planop.Dependency{Args: &planop.DependencyOpts{}}),
-		opCreator(fileop.Touch{Args: &fileop.TouchOpts{}}),
-		opCreator(gitop.Repo{Args: &gitop.RepoOpts{}}),
-	}
-}
-
-func opCreator(op operator.Interface) func() operator.Interface {
-	return func() operator.Interface {
-		// TODO need to reset the pointer to the address of a new zeroed
-		// instance of the struct
-		// data := op.Info().Data()
-		// targ := data.Command.Target       // *struct{}
-		// targVal := reflect.ValueOf(&targ) // **struct{}
-		// targElem := targVal.Elem()        // *struct{}
-		// resetElem := reflect.New(reflect.TypeOf(targ)).Elem()
-		// targElem.Set(resetElem)
-
-		// fmt.Printf(" val: %p %T %+v\n", &targVal, targVal, targVal)
-		// fmt.Printf("elem: %p %T %+v\n", &targElem, targElem, targElem)
-		// fmt.Printf("res: %p %+v\n", &data.Command.Target, data.Command.Target)
-		// reflect.ValueOf(targ).Set(reflect.ValueOf(targ).Elem())
-
-		return op
+		func() operator.Interface { return planop.Plan{Args: &planop.PlanOpts{}} },
+		func() operator.Interface { return planop.Dependency{Args: &planop.DependencyOpts{}} },
+		func() operator.Interface { return fileop.Touch{Args: &fileop.TouchOpts{}} },
+		func() operator.Interface { return gitop.Repo{Args: &gitop.RepoOpts{}} },
 	}
 }
 
