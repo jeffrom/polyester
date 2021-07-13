@@ -79,7 +79,12 @@ func ReadFile(p string) (*Plan, error) {
 func (p Plan) All() ([]*Plan, error) {
 	seen := make(map[string]bool)
 	_, all := allPlans(&p, seen)
-	return sortPlans(all)
+
+	sorted, err := sortPlans(all)
+	if err == nil && len(sorted) != len(all) {
+		panic("sorted plans were not the same length")
+	}
+	return sorted, err
 }
 
 func allPlans(p *Plan, seen map[string]bool) (map[string]bool, []*Plan) {
