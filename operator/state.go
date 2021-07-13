@@ -44,17 +44,42 @@ func (s State) Append(next ...StateEntry) State {
 	return State{Entries: entries}
 }
 
-func (s State) Empty() bool { return len(s.Entries) == 0 }
+func (s State) Source() State {
+	var ents []StateEntry
+	for _, ent := range s.Entries {
+		if ent.Target {
+			continue
+		}
+		ents = append(ents, ent)
+	}
+	return State{Entries: ents}
+}
+
+func (s State) Target() State {
+	var ents []StateEntry
+	for _, ent := range s.Entries {
+		if !ent.Target {
+			continue
+		}
+		ents = append(ents, ent)
+	}
+	return State{Entries: ents}
+}
+
+func (s State) Empty() bool {
+	return len(s.Entries) == 0
+}
 
 func (s State) Changed(other State) bool {
-	if len(s.Entries) != len(other.Entries) {
+	ents, oents := s.Entries, other.Entries
+	if len(ents) != len(oents) {
 		return true
 	}
-	sort.Sort(stateEntries(s.Entries))
-	sort.Sort(stateEntries(other.Entries))
+	sort.Sort(stateEntries(ents))
+	sort.Sort(stateEntries(oents))
 
-	for i, ent := range s.Entries {
-		oent := other.Entries[i]
+	for i, ent := range ents {
+		oent := oents[i]
 		if ent.Name != oent.Name {
 			return true
 		}
@@ -80,9 +105,10 @@ func (s State) Changed(other State) bool {
 }
 
 type StateEntry struct {
-	Name string               `json:"name"`
-	File *opfs.StateFileEntry `json:"file,omitempty"`
-	KV   map[string]string    `json:"kv,omitempty"`
+	Name   string               `json:"name"`
+	File   *opfs.StateFileEntry `json:"file,omitempty"`
+	KV     map[string]string    `json:"kv,omitempty"`
+	Target bool                 `json:"target,omitempty"`
 }
 
 type stateEntries []StateEntry

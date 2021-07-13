@@ -289,6 +289,7 @@ func (r *Planner) executePlan(octx operator.Context, plan *Plan, opts ApplyOpts)
 }
 
 func (r *Planner) executeOperation(octx operator.Context, op operator.Interface, opts ApplyOpts, dirty bool) (*OperationResult, error) {
+	prevDirty := dirty
 	stateDir := opts.StateDir
 	info := op.Info()
 	name := info.Name()
@@ -309,13 +310,12 @@ func (r *Planner) executeOperation(octx operator.Context, op operator.Interface,
 	}
 	res.currState = st
 
-	prevEmpty := prevst.Empty()
-	changed := prevst.Changed(st)
+	prevSrcSt := prevst.Source()
+	srcSt := st.Source()
+
+	prevEmpty := prevSrcSt.Empty()
+	changed := prevSrcSt.Changed(srcSt)
 	dirty = dirty || prevEmpty || changed
-	fmt.Printf("%20s: [empty: %8v] [changed: %8v] [dirty: %8v]\n", op.Info().Name(), prevst.Empty(), prevst.Changed(st), dirty)
-	res.PrevEmpty = prevEmpty
-	res.Changed = changed
-	res.Dirty = dirty
 	if dirty {
 		dryrunLabel := ""
 		if opts.Dryrun {
@@ -337,7 +337,24 @@ func (r *Planner) executeOperation(octx operator.Context, op operator.Interface,
 			if err := saveState(data, nextSt, stateDir); err != nil {
 				return nil, err
 			}
+
+			targetSt := nextSt.Target()
+			// fmt.Println("ASDF")
+			// targetSt.WriteTo(os.Stdout)
+			// fmt.Println("\n", targetSt.Changed(prevst.Target()))
+			if !targetSt.Empty() && !targetSt.Changed(prevst.Target()) {
+				fmt.Println("-> target state hasn't changed after execution")
+				if !prevDirty {
+					dirty = false
+					changed = false
+				}
+			}
 		}
 	}
+
+	fmt.Printf("%20s: [empty: %8v] [changed: %8v] [dirty: %8v]\n", op.Info().Name(), prevSrcSt.Empty(), changed, dirty)
+	res.PrevEmpty = prevEmpty
+	res.Changed = changed
+	res.Dirty = dirty
 	return res, nil
 }
