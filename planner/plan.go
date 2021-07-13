@@ -183,11 +183,11 @@ func opFromBuf(buf *bytes.Buffer) (operator.Interface, error) {
 	}
 	op := opc()
 	opData := op.Info().Data()
-	fmt.Printf("buf: %p %+v\n", opData.Command.Target, opData.Command.Target)
+	// fmt.Printf("buf: %p %+v\n", opData.Command.Target, opData.Command.Target)
 	if err := yaml.Unmarshal(entry.Args, opData.Command.Target); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal operation target: %w", err)
 	}
-	fmt.Printf("after: %p %+v\n", opData.Command.Target, opData.Command.Target)
+	// fmt.Printf("after: %p %+v\n", opData.Command.Target, opData.Command.Target)
 	return operation{op: op, data: opData}, nil
 }
 

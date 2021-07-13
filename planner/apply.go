@@ -130,7 +130,7 @@ func (r *Planner) execPlanDeclaration(ctx context.Context, dir, name string, pla
 		}
 
 		environ[i] = selfDir + ":" + env
-		fmt.Println("set $PATH=", environ[i])
+		// fmt.Println("set $PATH=", environ[i])
 		found = true
 		break
 	}
@@ -142,9 +142,9 @@ func (r *Planner) execPlanDeclaration(ctx context.Context, dir, name string, pla
 	cmd.Env = append(os.Environ(), environ...)
 	if isatty.IsTerminal(os.Stdout.Fd()) {
 		cmd.Stdin = os.Stdin
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
 	}
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 
 	fmt.Printf("+ _POLY_PLAN=%s %s \n", planFile, scriptFile)
 	if err := cmd.Run(); err != nil {
@@ -229,7 +229,7 @@ func (r *Planner) executeManifest(ctx context.Context, plan *Plan, dirRoot, stat
 		return nil, err
 	}
 	for _, subplan := range all {
-		fmt.Println("executeManifest", subplan.Name)
+		// fmt.Println("executeManifest", subplan.Name)
 		res, err := r.executePlan(octx, subplan, stateDir)
 		if err != nil {
 			return finalRes, err
@@ -301,7 +301,7 @@ func (r *Planner) executeOperation(octx operator.Context, op operator.Interface,
 	res.Changed = changed
 	res.Dirty = dirty
 	if dirty {
-		fmt.Printf("executing %s (%+v)\n", op.Info().Name(), data.Command.Target)
+		fmt.Printf("-> execute %s (%+v)\n", op.Info().Name(), data.Command.Target)
 
 		if err := op.Run(octx); err != nil {
 			return nil, err

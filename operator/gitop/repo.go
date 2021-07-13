@@ -3,7 +3,6 @@ package gitop
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -52,7 +51,7 @@ func (op Repo) Info() operator.Info {
 func (op Repo) GetState(octx operator.Context) (operator.State, error) {
 	opts := op.Args.(*RepoOpts)
 	st := operator.State{}
-	fmt.Printf("git-repo: GetState opts: %+v\n", opts)
+	// fmt.Printf("git-repo: GetState opts: %+v\n", opts)
 
 	headPath := filepath.Join(opts.Dest, ".git", "HEAD")
 	headInfo, err := octx.FS.Stat(headPath)
@@ -108,9 +107,9 @@ func (op Repo) GetState(octx operator.Context) (operator.State, error) {
 		cmd.Dir = octx.FS.Join(opts.Dest)
 		if isatty.IsTerminal(os.Stdout.Fd()) {
 			cmd.Stdin = os.Stdin
-			cmd.Stdout = os.Stdout
-			cmd.Stderr = os.Stderr
 		}
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
 		// fmt.Println("+ git", cmd.Args)
 		if err := cmd.Run(); err != nil {
 			return st, err
@@ -159,9 +158,9 @@ func (op Repo) Run(octx operator.Context) error {
 		cmd := exec.CommandContext(ctx, "git", args...)
 		if isatty.IsTerminal(os.Stdout.Fd()) {
 			cmd.Stdin = os.Stdin
-			cmd.Stdout = os.Stdout
-			cmd.Stderr = os.Stderr
 		}
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
 		if err := cmd.Run(); err != nil {
 			return err
 		}

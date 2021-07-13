@@ -33,7 +33,7 @@ func (psh *Parser) Compile(ctx context.Context) error {
 			if t.Args[0].Lit() == "set" {
 				continue
 			}
-			fmt.Printf("WOOP %+v\n", t.Args[0].Lit())
+			// fmt.Printf("WOOP %+v\n", t.Args[0].Lit())
 			fmt.Printf("lits %+v\n", literals(t.Args))
 		}
 

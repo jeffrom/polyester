@@ -2,7 +2,6 @@ package fileop
 
 import (
 	"errors"
-	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -48,7 +47,7 @@ mtime`,
 func (op Touch) GetState(octx operator.Context) (operator.State, error) {
 	opts := op.Args.(*TouchOpts)
 	st := operator.State{}
-	fmt.Printf("touch: GetState opts: %+v\n", opts)
+	// fmt.Printf("touch: GetState opts: %+v\n", opts)
 	info, err := octx.FS.Stat(opts.Path)
 	if err != nil {
 		if !errors.Is(err, os.ErrNotExist) {
