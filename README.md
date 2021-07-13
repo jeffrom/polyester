@@ -2,6 +2,10 @@
 
 Bootstrap servers, apps, and secrets. Run applications with secrets mapped to environment variables. Template configuration files and scripts. Continuously deploy. Made for version control.
 
+## status
+
+Pretty unstable!
+
 ## usage
 
 ### plans
