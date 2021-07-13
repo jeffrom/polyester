@@ -25,7 +25,7 @@ func TestDocker(t *testing.T) {
 	}
 
 	runDockerTest(t, "basic", "Basic")
-	// runDockerTest(t, "useradd", "Useradd")
+	runDockerTest(t, "useradd", "Useradd")
 	runDockerTest(t, "apt-install", "AptInstall")
 }
 
@@ -42,6 +42,13 @@ func TestBasic(t *testing.T) {
 
 func TestUseradd(t *testing.T) {
 	checkTestFilter(t, "useradd")
+
+	planPath := Path(filepath.Join("testdata", "useradd"))
+	for i := 0; i < 3; i++ {
+		if err := run([]string{"polyester", "apply", planPath}); err != nil {
+			t.Fatal(err)
+		}
+	}
 }
 
 func TestAptInstall(t *testing.T) {
