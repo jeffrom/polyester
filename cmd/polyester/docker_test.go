@@ -67,7 +67,7 @@ func runDockerTest(t *testing.T, name, goTestName string) {
 	t.Run(name, func(t *testing.T) {
 		args := []string{
 			"run", "--rm", "-e", "DOCKER_TEST=" + name, "jeffmartin1117/polyester:test",
-			"go", "test", "-v", "-run", "^Test" + goTestName + "$", "./cmd/polyester",
+			"go", "test", "-v", "-count", "1", "-run", "^Test" + goTestName + "$", "./cmd/polyester",
 		}
 		cmd := exec.Command("docker", args...)
 		fmt.Printf("+ %v\n", cmd.Args)
