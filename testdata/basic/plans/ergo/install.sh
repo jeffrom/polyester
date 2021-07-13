@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eux
 
-polyester pkg_required git
+polyester apt-install git
 
 polyester touch --mode 0600 /tmp/hello
 polyester useradd --create-home --shell /bin/sh appuser

@@ -6,6 +6,7 @@ import (
 	"github.com/jeffrom/polyester/operator"
 	"github.com/jeffrom/polyester/operator/fileop"
 	"github.com/jeffrom/polyester/operator/gitop"
+	"github.com/jeffrom/polyester/operator/pkgop"
 	"github.com/jeffrom/polyester/operator/planop"
 )
 
@@ -28,6 +29,7 @@ func opCreators() []func() operator.Interface {
 		func() operator.Interface { return planop.Dependency{Args: &planop.DependencyOpts{}} },
 		func() operator.Interface { return fileop.Touch{Args: &fileop.TouchOpts{}} },
 		func() operator.Interface { return gitop.Repo{Args: &gitop.RepoOpts{}} },
+		func() operator.Interface { return pkgop.AptInstall{Args: &pkgop.AptInstallOpts{}} },
 	}
 }
 
