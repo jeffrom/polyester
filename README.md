@@ -84,6 +84,8 @@ $ ./polyester apply --dir-root /tmp/mysandbox --state-dir /tmp/mystate testdata/
 * validate operator calls in shell scripts pre-execution
 * systemd operators to reenable, reinstall, restart units on state changes (maybe shell is enough).
 
+## errata
+
 The dsl can be posix shell, just inject a bunch of functions that write the plan to an intermediate format. Can separate out the statements that are real shell statements and covert them into "shell script" operations.
 
 maybe can use this to parse out the normal shell from the special dsl shell: https://github.com/mvdan/sh
