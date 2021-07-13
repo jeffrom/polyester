@@ -1,5 +1,5 @@
 #!/bin/sh
 set -eux
 
-polyester plan ergo
+polyester plan gitty
 polyester plan touchy
