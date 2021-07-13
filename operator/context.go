@@ -23,6 +23,19 @@ func NewContext(ctx context.Context, fs FS) Context {
 	}
 }
 
+func (c Context) WithValue(key, val interface{}) Context {
+	ctx := context.WithValue(c.Context, key, val)
+	return Context{
+		Context: ctx,
+		Opts:    c.Opts,
+		FS:      c.FS,
+	}
+}
+
+func (c Context) Value(key interface{}) interface{} {
+	return c.Context.Value(key)
+}
+
 func (c Context) WithGotState(gotState bool) Context {
 	ctx := context.WithValue(c.Context, gotStateKey, gotState)
 	return Context{

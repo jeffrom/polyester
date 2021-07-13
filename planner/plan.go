@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/ghodss/yaml"
 	"github.com/spf13/cobra"
@@ -16,6 +18,7 @@ import (
 )
 
 type Plan struct {
+	Name         string               `json:"name"`
 	Operations   []operator.Interface `json:"operations"`
 	Plans        []*Plan              `json:"plans,omitempty"`
 	Dependencies []*Plan              `json:"dependencies,omitempty"`
@@ -27,6 +30,8 @@ func ReadFile(p string) (*Plan, error) {
 		return nil, err
 	}
 	defer f.Close()
+	_, planName := filepath.Split(p)
+	planName = strings.SplitN(planName, ".", 2)[0]
 
 	var ops []operator.Interface
 	buf := &bytes.Buffer{}
@@ -67,7 +72,7 @@ func ReadFile(p string) (*Plan, error) {
 	if op != nil {
 		ops = append(ops, op)
 	}
-	return &Plan{Operations: ops}, nil
+	return &Plan{Name: planName, Operations: ops}, nil
 }
 
 func (p Plan) TextSummary(w io.Writer) error {
@@ -78,19 +83,6 @@ func (p Plan) TextSummary(w io.Writer) error {
 	}
 	return bw.Flush()
 }
-
-// func (p *Plan) resolve() error {
-// 	for _, op := range p.Operations {
-// 		name := op.Info().Name()
-// 		switch name {
-// 		case "plan":
-
-// 		case "dependency":
-
-// 		}
-// 	}
-// 	return nil
-// }
 
 func opFromBuf(buf *bytes.Buffer) (operator.Interface, error) {
 	defer buf.Reset()

@@ -1,6 +1,8 @@
 package commands
 
 import (
+	"os"
+
 	"github.com/spf13/cobra"
 
 	"github.com/jeffrom/polyester/planner"
@@ -17,6 +19,7 @@ func newApplyCmd() *cobra.Command {
 			if len(args) > 0 {
 				dirs = args
 			}
+			var results []*planner.Result
 			for _, dir := range dirs {
 				pl, err := planner.New(dir)
 				if err != nil {
@@ -27,7 +30,16 @@ func newApplyCmd() *cobra.Command {
 					return err
 				}
 
-				if _, err = pl.Apply(ctx, opts); err != nil {
+				res, err := pl.Apply(ctx, opts)
+				if err != nil {
+					return err
+				}
+				if res != nil {
+					results = append(results, res)
+				}
+			}
+			for _, res := range results {
+				if err := res.TextSummary(os.Stdout); err != nil {
 					return err
 				}
 			}

@@ -64,6 +64,3 @@ func (r *Planner) getPlanFile() string {
 	}
 	return pf
 }
-
-type Result struct {
-}

@@ -23,26 +23,26 @@ type ApplyOpts struct {
 	StateDir     string
 }
 
-func (r *Planner) Apply(ctx context.Context, opts ApplyOpts) (Result, error) {
+func (r *Planner) Apply(ctx context.Context, opts ApplyOpts) (*Result, error) {
 	pfPath := r.getPlanFile()
 	pb, err := fs.ReadFile(os.DirFS(r.rootDir), pfPath)
 	if err != nil {
-		return Result{}, err
+		return nil, err
 	}
 	planDir, err := r.resolvePlanDir(ctx)
 	if err != nil {
-		return Result{}, err
+		return nil, err
 	}
 	fmt.Printf("plan directory: %s\ncompiling plan: %s\n", planDir, filepath.Join(r.rootDir, pfPath))
 
 	tmpDir, plan, err := r.compileMainPlan(ctx, pb)
 	if err != nil {
-		return Result{}, err
+		return nil, err
 	}
 	fmt.Println("tmpdir:", tmpDir)
 
 	if err := plan.TextSummary(os.Stdout); err != nil {
-		return Result{}, err
+		return nil, err
 	}
 
 	dirRoot := opts.DirRoot
@@ -50,14 +50,15 @@ func (r *Planner) Apply(ctx context.Context, opts ApplyOpts) (Result, error) {
 		dirRoot = "/"
 	}
 
-	if err := r.executeManifest(ctx, plan, dirRoot, opts.StateDir); err != nil {
-		return Result{}, err
+	res, err := r.executeManifest(ctx, plan, dirRoot, opts.StateDir)
+	if err != nil {
+		return nil, err
 	}
 
 	if err := os.RemoveAll(tmpDir); err != nil {
-		return Result{}, err
+		return nil, err
 	}
-	return Result{}, nil
+	return res, nil
 }
 
 func (r *Planner) resolvePlanDir(ctx context.Context) (string, error) {
@@ -195,55 +196,96 @@ func (r *Planner) resolvePlan(ctx context.Context, dir string) (*Plan, error) {
 	return plan, nil
 }
 
-func (r *Planner) executeManifest(ctx context.Context, plan *Plan, dirRoot, stateDir string) error {
+func (r *Planner) executeManifest(ctx context.Context, plan *Plan, dirRoot, stateDir string) (*Result, error) {
+	finalRes := &Result{}
 	octx := operator.NewContext(ctx, opfs.New(dirRoot))
 	for _, subplan := range plan.Plans {
-		if err := r.executePlan(octx, subplan, stateDir); err != nil {
-			return err
+		res, err := r.executePlan(octx, subplan, stateDir)
+		if err != nil {
+			return finalRes, err
+		}
+		if res != nil {
+			finalRes.Plans = append(finalRes.Plans, res)
 		}
 	}
 
-	// if the main plan has any operations, run 'em
-	if err := r.executePlan(octx, plan, stateDir); err != nil {
-		return err
+	// if the main plan has any operations, run 'em last
+	res, err := r.executePlan(octx, plan, stateDir)
+	if err != nil {
+		return finalRes, err
 	}
-	return nil
+	if res != nil {
+		finalRes.Plans = append(finalRes.Plans, res)
+	}
+	return finalRes, nil
 }
 
 // executePlan runs a single plan
-func (r *Planner) executePlan(octx operator.Context, plan *Plan, stateDir string) error {
+func (r *Planner) executePlan(octx operator.Context, plan *Plan, stateDir string) (*PlanResult, error) {
 	dirty := false
+	finalRes := &PlanResult{Name: plan.Name}
 	for _, op := range plan.Operations {
-		data := op.Info().Data()
-		prevst, err := readPrevState(data, stateDir)
+		res, err := r.executeOperation(octx, op, stateDir, dirty)
 		if err != nil {
-			return err
+			return nil, err
 		}
-		st, err := op.GetState(octx)
-		if err != nil {
-			return err
+		if res != nil && res.Dirty {
+			dirty = true
 		}
-
-		prevEmpty := prevst.Empty()
-		changed := prevst.Changed(st)
-		dirty = dirty || prevEmpty || changed
-		fmt.Printf("%20s: [empty: %8v] [changed: %8v] [dirty: %8v]\n", op.Info().Name(), prevst.Empty(), prevst.Changed(st), dirty)
-		if dirty {
-			fmt.Printf("executing %s (%+v)\n", op.Info().Name(), data.Command.Target)
-
-			if err := op.Run(octx); err != nil {
-				return err
-			}
-
-			nextSt, err := op.GetState(octx.WithGotState(true))
-			if err != nil {
-				return err
-			}
-
-			if err := saveState(data, nextSt, stateDir); err != nil {
-				return err
-			}
+		if res != nil {
+			finalRes.Operations = append(finalRes.Operations, res)
 		}
 	}
-	return nil
+	if len(finalRes.Operations) == 0 {
+		return nil, nil
+	}
+	finalRes.Changed = dirty
+	return finalRes, nil
+}
+
+func (r *Planner) executeOperation(octx operator.Context, op operator.Interface, stateDir string, dirty bool) (*OperationResult, error) {
+	info := op.Info()
+	name := info.Name()
+	// skip planops because planner handles running them outside this context
+	if name == "plan" || name == "dependency" {
+		return nil, nil
+	}
+	res := &OperationResult{}
+	data := info.Data()
+	prevst, err := readPrevState(data, stateDir)
+	if err != nil {
+		return nil, err
+	}
+	res.prevState = prevst
+	st, err := op.GetState(octx)
+	if err != nil {
+		return nil, err
+	}
+	res.currState = st
+
+	prevEmpty := prevst.Empty()
+	changed := prevst.Changed(st)
+	dirty = dirty || prevEmpty || changed
+	fmt.Printf("%20s: [empty: %8v] [changed: %8v] [dirty: %8v]\n", op.Info().Name(), prevst.Empty(), prevst.Changed(st), dirty)
+	res.PrevEmpty = prevEmpty
+	res.Changed = changed
+	res.Dirty = dirty
+	if dirty {
+		fmt.Printf("executing %s (%+v)\n", op.Info().Name(), data.Command.Target)
+
+		if err := op.Run(octx); err != nil {
+			return nil, err
+		}
+
+		nextSt, err := op.GetState(octx.WithGotState(true))
+		if err != nil {
+			return nil, err
+		}
+		res.nextState = nextSt
+
+		if err := saveState(data, nextSt, stateDir); err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
 }

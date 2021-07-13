@@ -42,7 +42,6 @@ func (op Plan) GetState(octx operator.Context) (operator.State, error) {
 }
 
 func (op Plan) Run(octx operator.Context) error {
-
 	return nil
 }
 
