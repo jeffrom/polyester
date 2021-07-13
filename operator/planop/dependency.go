@@ -37,12 +37,10 @@ func (op Dependency) Info() operator.Info {
 
 func (op Dependency) GetState(octx operator.Context) (operator.State, error) {
 	st := operator.State{}
-
 	return st, nil
 }
 
 func (op Dependency) Run(octx operator.Context) error {
-
 	return nil
 }
 

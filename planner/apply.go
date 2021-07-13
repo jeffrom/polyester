@@ -159,10 +159,21 @@ func (r *Planner) resolvePlan(ctx context.Context, dir string) (*Plan, error) {
 		return nil, err
 	}
 
+	allPlans := make(map[string]*Plan)
+	if err := r.resolveOnePlan(ctx, plan, dir, allPlans); err != nil {
+		return nil, err
+	}
+	return plan, nil
+}
+
+func (r *Planner) resolveOnePlan(ctx context.Context, plan *Plan, dir string, allPlans map[string]*Plan) error {
+	if _, ok := allPlans[plan.Name]; ok {
+		return nil
+	}
 	for _, op := range plan.Operations {
 		info := op.Info()
 		name := info.Name()
-		fmt.Printf("uhhh %+v\n", info.Data().Command)
+		// fmt.Printf("uhhh %+v\n", name)
 		targ := info.Data().Command.Target
 		var planNames []string
 		switch name {
@@ -175,16 +186,17 @@ func (r *Planner) resolvePlan(ctx context.Context, dir string) (*Plan, error) {
 		for _, planName := range planNames {
 			planb, err := os.ReadFile(filepath.Join(r.planDir, "plans", planName, "install.sh"))
 			if err != nil {
-				return nil, fmt.Errorf("failed to read plan file: %w", err)
+				return fmt.Errorf("failed to read plan file: %w", err)
 			}
 			if err := r.execPlanDeclaration(ctx, dir, planName, planb); err != nil {
-				return nil, fmt.Errorf("failed to compile plan %q: %w", planName, err)
+				return fmt.Errorf("failed to compile plan %q: %w", planName, err)
 			}
 
 			subplan, err := ReadFile(filepath.Join(dir, "plans", planName+".yaml"))
 			if err != nil {
-				return nil, err
+				return err
 			}
+			// fmt.Println("resolve YEA:", name, subplan.Name)
 			switch name {
 			case "plan":
 				plan.Plans = append(plan.Plans, subplan)
@@ -193,13 +205,31 @@ func (r *Planner) resolvePlan(ctx context.Context, dir string) (*Plan, error) {
 			}
 		}
 	}
-	return plan, nil
+
+	for _, sp := range plan.Dependencies {
+		if err := r.resolveOnePlan(ctx, sp, dir, allPlans); err != nil {
+			return err
+		}
+	}
+	for _, sp := range plan.Plans {
+		if err := r.resolveOnePlan(ctx, sp, dir, allPlans); err != nil {
+			return err
+		}
+	}
+
+	allPlans[plan.Name] = plan
+	return nil
 }
 
 func (r *Planner) executeManifest(ctx context.Context, plan *Plan, dirRoot, stateDir string) (*Result, error) {
 	finalRes := &Result{}
 	octx := operator.NewContext(ctx, opfs.New(dirRoot))
-	for _, subplan := range plan.Plans {
+	all, err := plan.All()
+	if err != nil {
+		return nil, err
+	}
+	for _, subplan := range all {
+		fmt.Println("executeManifest", subplan.Name)
 		res, err := r.executePlan(octx, subplan, stateDir)
 		if err != nil {
 			return finalRes, err
@@ -210,13 +240,13 @@ func (r *Planner) executeManifest(ctx context.Context, plan *Plan, dirRoot, stat
 	}
 
 	// if the main plan has any operations, run 'em last
-	res, err := r.executePlan(octx, plan, stateDir)
-	if err != nil {
-		return finalRes, err
-	}
-	if res != nil {
-		finalRes.Plans = append(finalRes.Plans, res)
-	}
+	// res, err := r.executePlan(octx, plan, stateDir)
+	// if err != nil {
+	// 	return finalRes, err
+	// }
+	// if res != nil {
+	// 	finalRes.Plans = append(finalRes.Plans, res)
+	// }
 	return finalRes, nil
 }
 
