@@ -321,6 +321,7 @@ func (r *Planner) executeOperation(octx operator.Context, op operator.Interface,
 	prevEmpty := prevSrcSt.Empty()
 	changed := prevSrcSt.Changed(srcSt)
 	dirty = dirty || prevEmpty || changed
+	executed := false
 	if dirty {
 		dryrunLabel := ""
 		if opts.Dryrun {
@@ -329,6 +330,7 @@ func (r *Planner) executeOperation(octx operator.Context, op operator.Interface,
 		fmt.Printf("-> execute %s%s (%+v)\n", op.Info().Name(), dryrunLabel, data.Command.Target)
 
 		if !opts.Dryrun {
+			executed = true
 			if err := op.Run(octx); err != nil {
 				return nil, err
 			}
@@ -351,16 +353,17 @@ func (r *Planner) executeOperation(octx operator.Context, op operator.Interface,
 				fmt.Println("-> target state hasn't changed after execution")
 				if !prevDirty {
 					dirty = false
-					changed = false
 				}
 			}
 		}
 	}
 
-	fmt.Printf("%25s: [empty: %8v] [changed: %8v] [dirty: %8v]\n", op.Info().Name(), prevSrcSt.Empty(), changed, dirty)
+	// fmt.Printf("%25s: [empty: %8v] [changed: %8v] [dirty: %8v]\n", op.Info().Name(), prevSrcSt.Empty(), changed, dirty)
+	formatOpComplete(os.Stdout, op.Info().Name(), prevSrcSt.Empty(), changed, dirty, executed)
 	res.PrevEmpty = prevEmpty
 	res.Changed = changed
 	res.Dirty = dirty
+	res.Executed = executed
 	return res, nil
 }
 

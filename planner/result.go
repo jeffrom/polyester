@@ -36,6 +36,7 @@ type OperationResult struct {
 	Dirty     bool `json:"dirty"`
 	Changed   bool `json:"changed"`
 	PrevEmpty bool `json:"prev_empty"`
+	Executed  bool `json:"executed"`
 
 	prevState operator.State
 	currState operator.State
