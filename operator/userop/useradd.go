@@ -7,9 +7,13 @@ import (
 )
 
 type UseraddOpts struct {
-	User       string `json:"user"`
-	Shell      string `json:"shell,omitempty"`
-	CreateHome bool   `json:"create_home,omitempty"`
+	User            string `json:"user"`
+	Shell           string `json:"shell,omitempty"`
+	CreateHomeDir   string `json:"home_dir,omitempty"`
+	Comment         string `json:"comment,omitempty"`
+	CreateHome      bool   `json:"create_home,omitempty"`
+	SystemUser      bool   `json:"system,omitempty"`
+	CreateUserGroup bool   `json:"user_group,omitempty"`
 }
 
 type Useradd struct {
@@ -26,7 +30,11 @@ func (op Useradd) Info() operator.Info {
 	}
 	flags := cmd.Flags()
 	flags.StringVarP(&opts.Shell, "shell", "s", "", "user login `shell`")
+	flags.StringVarP(&opts.CreateHomeDir, "home-dir", "d", "", "create and use `dir` for home directory")
+	flags.StringVarP(&opts.Comment, "comment", "c", "", "description of user")
 	flags.BoolVarP(&opts.CreateHome, "create-home", "m", false, "create home directory")
+	flags.BoolVarP(&opts.SystemUser, "system", "r", false, "create a system account")
+	flags.BoolVarP(&opts.CreateUserGroup, "user-group", "U", false, "create group with same name as user")
 
 	return &operator.InfoData{
 		OpName: "useradd",

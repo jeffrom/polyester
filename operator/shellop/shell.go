@@ -36,14 +36,10 @@ func (op Shell) Info() operator.Info {
 	}
 	flags := cmd.Flags()
 	flags.StringVar(&opts.Dir, "dir", "", "the directory to run the script in")
-	// TODO need to handle source v target state. Here, we want to run the
-	// operator if either no on-changes were specified, or on-change files
-	// changed. BUT if we run the operator and the target state doesn't change,
-	// the operation should count as clean -- ie if this operation would make
-	// the plan dirty, it should not if the target didn't change.
 	flags.StringArrayVar(&opts.Targets, "target", nil, "track state of target `glob`")
 	flags.StringArrayVar(&opts.OnChanges, "on-change", nil, "track state of source `glob`")
 	flags.StringArrayVar(&opts.IgnoreREs, "ignore", nil, "ignore files matching `regex`")
+	// TODO --template, --template-data
 
 	return &operator.InfoData{
 		OpName: "sh",
