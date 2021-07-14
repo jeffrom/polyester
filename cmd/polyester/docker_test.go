@@ -28,6 +28,8 @@ func TestDocker(t *testing.T) {
 	runDockerTest(t, "basic", "Basic")
 	runDockerTest(t, "useradd", "Useradd")
 	runDockerTest(t, "apt-install", "AptInstall")
+	runDockerTest(t, "copy", "Copy")
+	runDockerTest(t, "pcopy", "Pcopy")
 	runDockerTest(t, "atomic-copy", "AtomicCopy")
 }
 
@@ -75,9 +77,28 @@ func TestAptInstall(t *testing.T) {
 	}
 }
 
-func TestAtomicCopy(t *testing.T) {
-	checkTestFilter(t, "apt-install")
+func TestCopy(t *testing.T) {
+	checkTestFilter(t, "copy")
+	planPath := Path(filepath.Join("testdata", "copy"))
+	for i := 0; i < 3; i++ {
+		if err := run([]string{"polyester", "apply", planPath}); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
 
+func TestPcopy(t *testing.T) {
+	checkTestFilter(t, "pcopy")
+	planPath := Path(filepath.Join("testdata", "pcopy"))
+	for i := 0; i < 3; i++ {
+		if err := run([]string{"polyester", "apply", planPath}); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+func TestAtomicCopy(t *testing.T) {
+	checkTestFilter(t, "atomic-copy")
 	planPath := Path(filepath.Join("testdata", "atomic-copy"))
 	for i := 0; i < 3; i++ {
 		if err := run([]string{"polyester", "apply", planPath}); err != nil {
