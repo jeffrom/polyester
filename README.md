@@ -49,7 +49,7 @@ $ cd ~/repos/cluster && git pull && polyester apply
 
 The key concepts are "plans" and "operators". Plans are sequences of operations, used to execute commands on an environment. Operations are run in order, by plan (plans will probably run concurrently in the future). There is a caching strategy similar to the docker layer cache, where, if an operation's state changes, it and every subsequent operation is executed.
 
-The primary domain language is POSIX shell (though others could be supported without a huge amount of effort). Shell scripts are evaluated to generate the execution plan by outputting it to an intermediate format in the local filesystem.
+The primary domain language is POSIX shell (though others could be supported without a huge amount of effort). Shell scripts are evaluated to generate the execution plan by outputting it to an intermediate format in the local filesystem. This means variable scope and other behavior may not be what you expect because the script doesn't immediately execute, but rather constructs an intermediate plan.
 
 Operators idempotently execute operations and track state. In many cases they extend common linux tools. Some example operators:
 
@@ -81,13 +81,27 @@ $ ./polyester apply --dir-root /tmp/mysandbox --state-dir /tmp/mystate testdata/
 
 ## todo
 
-* secret management (maybe w/ age and / or sops)
-* templating (maybe w/ gomplate)
-* validate operator calls in shell scripts pre-execution
-* systemd operators to reenable, reinstall, restart units on state changes (maybe shell is enough).
-
-## errata
-
-The dsl can be posix shell, just inject a bunch of functions that write the plan to an intermediate format. Can separate out the statements that are real shell statements and covert them into "shell script" operations.
-
-maybe can use this to parse out the normal shell from the special dsl shell: https://github.com/mvdan/sh
+* operators
+  - secret management (age, sops, ?)
+  - templating (maybe w/ gomplate)
+  - systemd operators to reenable, reinstall, restart units on state changes (maybe shell is enough).
+* shell plan script improvements
+  - validate operator calls in shell scripts pre-execution
+  - handling variables / scope in shell script plans
+  - maybe a special annotation to embed sh operator scripts directly in plan files (currently you pass a string, ie `polyester sh "echo hi"`).
+* planner improvements
+  - concurrent plan execution, accounting for dependencies
+  - improve dryrun contract -- ie planner passes --dry-run to commands that have it otherwise execution is skipped.
+  - use remote, versioned git repo / tar / exported plans
+* output formats
+  - nice readable apply summaries, what changed etc
+  - json log for debugging, introspection, integration testing
+  - operations interface (maybe just stringer) to control its argument formatting
+* testing
+  - parameterize base docker image to run against various distros & oses
+  - generic table test for operation idempotency
+  - replace github repo in docker basic test w/ a proper test fixture repo on the local fs
+* docs
+  - write some
+  - templatized operation docs using go generate / gomplate / operation.Info
+  - example repo / article
