@@ -170,7 +170,7 @@ func sortPlans(plans []*Plan) ([]*Plan, error) {
 	return resolved, nil
 }
 
-func (p Plan) TextSummary(w io.Writer) error {
+func (p Plan) TextSummary(w io.Writer, prevs, currs []operator.State) error {
 	bw := bufio.NewWriter(w)
 	name := p.Name
 	if name == "plan" {
@@ -179,12 +179,19 @@ func (p Plan) TextSummary(w io.Writer) error {
 	bw.WriteString(fmt.Sprintf("%s (%d operations):\n", name, len(p.Operations)))
 	for i, op := range p.Operations {
 		n := i + 1
+		chgLabel := ""
+		if prevs != nil && currs != nil {
+			prevst, currst := prevs[i], currs[i]
+			if currst.Changed(prevst) {
+				chgLabel = "X"
+			}
+		}
 		b, err := json.Marshal(op.Info().Data().Command.Target)
 		if err != nil {
 			return err
 		}
 		// TODO would be nice to know here if operations changed since the last run
-		fmt.Fprintf(bw, "%4d)%20s: %s\n", n, op.Info().Name(), string(b))
+		fmt.Fprintf(bw, "%3d) %20s: [ %1s ] %s\n", n, op.Info().Name(), chgLabel, string(b))
 	}
 	return bw.Flush()
 }
