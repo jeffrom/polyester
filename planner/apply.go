@@ -69,6 +69,10 @@ func (r *Planner) Apply(ctx context.Context, opts ApplyOpts) (*Result, error) {
 		return nil, err
 	}
 	fmt.Println("tmpdir:", tmpDir)
+	// XXX want to do something smart so single runs don't clobber everything else
+	// if err := pruneState(plan, opts.StateDir); err != nil {
+	// 	return nil, err
+	// }
 
 	res, err := r.executeManifest(ctx, plan, opts)
 	if err != nil {

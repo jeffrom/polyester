@@ -5,12 +5,43 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
 
 	"github.com/jeffrom/polyester/operator"
 )
+
+func pruneState(plan *Plan, stateDir string) error {
+	keys := make(map[string]bool)
+	for _, op := range plan.Operations {
+		key, err := opCacheKey(op.Info().Data())
+		if err != nil {
+			return err
+		}
+		if key != "" {
+			keys[key] = true
+		}
+	}
+
+	walkFn := func(p string, d fs.DirEntry, perr error) error {
+		if perr != nil {
+			return perr
+		}
+		if d.IsDir() {
+			return fmt.Errorf("unexpectedly found a directory %q", p)
+		}
+		fmt.Println(p)
+		return nil
+	}
+
+	if err := fs.WalkDir(os.DirFS(stateDir), stateDir, walkFn); err != nil {
+		return err
+	}
+	return nil
+}
 
 func readPrevState(data *operator.InfoData, stateDir string) (operator.State, error) {
 	st := operator.State{}
