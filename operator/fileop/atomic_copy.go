@@ -129,7 +129,7 @@ func (op AtomicCopy) GetState(octx operator.Context) (operator.State, error) {
 				return nil
 			}
 			if err := fs.WalkDir(octx.FS, file, walkFn); err != nil {
-				return st, fmt.Errorf("walkdir failed: %w", err)
+				return st, fmt.Errorf("source walkdir failed: %w", err)
 			}
 		}
 	}
@@ -160,37 +160,63 @@ func (op AtomicCopy) GetState(octx operator.Context) (operator.State, error) {
 
 	}
 
-	// TODO probably need to traverse dirs
 	info, err := octx.FS.Stat(opts.Dest)
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return st, err
 	}
-	var checksum []byte
-	if info != nil && !info.IsDir() {
-		var err error
-		checksum, err = Checksum(octx.FS.Join(opts.Dest))
-		if err != nil {
-			return st, err
+
+	dests := []string{opts.Dest}
+	if info != nil && info.IsDir() {
+		dests = []string{}
+		walkFn := func(p string, d fs.DirEntry, perr error) error {
+			if perr != nil {
+				return perr
+			}
+			if excl, err := excluded(p, opts.ExcludeGlobs); err != nil {
+				return err
+			} else if excl {
+				return nil
+			}
+			dests = append(dests, p)
+			return nil
+		}
+		if err := fs.WalkDir(octx.FS, opts.Dest, walkFn); err != nil {
+			return st, fmt.Errorf("dest walkdir failed: %w", err)
 		}
 	}
 
-	// include both source and target state here, since we want to rerun if the
-	// target changes.
-	st = st.Append(operator.StateEntry{
-		Name: opts.Dest,
-		File: &opfs.StateFileEntry{
-			Info:   info,
-			SHA256: checksum,
-		},
-	})
-	st = st.Append(operator.StateEntry{
-		Name:   opts.Dest,
-		Target: true,
-		File: &opfs.StateFileEntry{
-			Info:   info,
-			SHA256: checksum,
-		},
-	})
+	for _, dest := range dests {
+		info, err := octx.FS.Stat(dest)
+		if err != nil && !errors.Is(err, os.ErrNotExist) {
+			return st, err
+		}
+		var checksum []byte
+		if info != nil && !info.IsDir() {
+			var err error
+			checksum, err = Checksum(octx.FS.Join(dest))
+			if err != nil {
+				return st, err
+			}
+		}
+
+		// include both source and target state here, since we want to rerun if the
+		// target changes.
+		st = st.Append(operator.StateEntry{
+			Name: dest,
+			File: &opfs.StateFileEntry{
+				Info:   info,
+				SHA256: checksum,
+			},
+		})
+		st = st.Append(operator.StateEntry{
+			Name:   dest,
+			Target: true,
+			File: &opfs.StateFileEntry{
+				Info:   info,
+				SHA256: checksum,
+			},
+		})
+	}
 
 	return st, nil
 }

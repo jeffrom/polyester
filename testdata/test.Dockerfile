@@ -13,4 +13,5 @@ RUN set -x; \
         -o /usr/bin/polyester \
         ./cmd/polyester
 
-RUN set -x; for pkg in $(go list ./...); do go test -c $pkg; done
+# RUN set -x; for pkg in $(go list ./...); do go test -c $pkg; done
+RUN set -x; go test -c ./cmd/polyester
