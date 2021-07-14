@@ -1,5 +1,5 @@
 #!/bin/sh
-set -eux
+set -eu
 
 polyester plan gitty
 polyester plan touchy

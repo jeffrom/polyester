@@ -3,9 +3,7 @@ package shell
 
 import (
 	"context"
-	"fmt"
 	"io"
-	"os"
 
 	"mvdan.cc/sh/v3/syntax"
 )
@@ -23,8 +21,9 @@ func Parse(r io.Reader) (*Parser, error) {
 }
 
 func (psh *Parser) Compile(ctx context.Context) error {
-	printer := syntax.NewPrinter()
-	for i, stmt := range psh.Stmts {
+	// printer := syntax.NewPrinter()
+	// for i, stmt := range psh.Stmts {
+	for _, stmt := range psh.Stmts {
 		switch t := stmt.Cmd.(type) {
 		case *syntax.CallExpr:
 			if len(t.Args) == 0 {
@@ -34,12 +33,12 @@ func (psh *Parser) Compile(ctx context.Context) error {
 				continue
 			}
 			// fmt.Printf("WOOP %+v\n", t.Args[0].Lit())
-			fmt.Printf("lits %+v\n", literals(t.Args))
+			// fmt.Printf("lits %+v\n", literals(t.Args))
 		}
 
-		fmt.Printf("Cmd %d: %-20T - ", i, stmt.Cmd)
-		printer.Print(os.Stdout, stmt.Cmd)
-		fmt.Println()
+		// fmt.Printf("Cmd %d: %-20T - ", i, stmt.Cmd)
+		// printer.Print(os.Stdout, stmt.Cmd)
+		// fmt.Println()
 	}
 	return nil
 }

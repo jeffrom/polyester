@@ -1,4 +1,4 @@
 #!/bin/sh
-set -eux
+set -eu
 
 polyester useradd --create-home --shell /bin/sh cooluser

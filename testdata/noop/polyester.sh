@@ -1,4 +1,4 @@
 #!/bin/sh
-set -eux
+set -eu
 
 polyester noop

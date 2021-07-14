@@ -1,5 +1,5 @@
 #!/bin/sh
-set -eux
+set -eu
 
 testdir=/tmp/test/copy
 

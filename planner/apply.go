@@ -58,7 +58,11 @@ func (r *Planner) Apply(ctx context.Context, opts ApplyOpts) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("plan directory: %s\ncompiling plan: %s\n", planDir, filepath.Join(r.rootDir, pfPath))
+	wd, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
+	fmt.Printf("current directory: %s\nplan directory: %s\ncompiling plan: %s\n", wd, strings.TrimPrefix(planDir, wd+"/"), strings.TrimPrefix(filepath.Join(r.rootDir, pfPath), wd+"/"))
 
 	tmpDir, plan, err := r.compileMainPlan(ctx, pb)
 	if err != nil {
@@ -353,7 +357,7 @@ func (r *Planner) executeOperation(octx operator.Context, op operator.Interface,
 		}
 	}
 
-	fmt.Printf("%20s: [empty: %8v] [changed: %8v] [dirty: %8v]\n", op.Info().Name(), prevSrcSt.Empty(), changed, dirty)
+	fmt.Printf("%25s: [empty: %8v] [changed: %8v] [dirty: %8v]\n", op.Info().Name(), prevSrcSt.Empty(), changed, dirty)
 	res.PrevEmpty = prevEmpty
 	res.Changed = changed
 	res.Dirty = dirty

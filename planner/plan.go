@@ -176,13 +176,15 @@ func (p Plan) TextSummary(w io.Writer) error {
 	if name == "plan" {
 		name = "main plan"
 	}
-	bw.WriteString(fmt.Sprintf("%s (%d ops):\n", name, len(p.Operations)))
-	for _, op := range p.Operations {
+	bw.WriteString(fmt.Sprintf("%s (%d operations):\n", name, len(p.Operations)))
+	for i, op := range p.Operations {
+		n := i + 1
 		b, err := json.Marshal(op.Info().Data().Command.Target)
 		if err != nil {
 			return err
 		}
-		fmt.Fprintf(bw, "  %s: %s\n", op.Info().Name(), string(b))
+		// TODO would be nice to know here if operations changed since the last run
+		fmt.Fprintf(bw, "%4d)%20s: %s\n", n, op.Info().Name(), string(b))
 	}
 	return bw.Flush()
 }
