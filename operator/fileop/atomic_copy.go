@@ -288,7 +288,7 @@ func (op AtomicCopy) Run(octx operator.Context) error {
 		// try to move the intermediate dir back
 		if tmpDirPath != "" {
 			if rerr := os.Rename(tmpDirPath, destPath); rerr != nil {
-				return fmt.Errorf("recovery failed: %w, orig error: %w", rerr, err)
+				return fmt.Errorf("recovery failed: %v, orig error: %w", rerr, err)
 			}
 		}
 		return fmt.Errorf("(recovered) %w", err)
