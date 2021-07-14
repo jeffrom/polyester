@@ -49,10 +49,8 @@ func (op Touch) GetState(octx operator.Context) (operator.State, error) {
 	st := operator.State{}
 	// fmt.Printf("touch: GetState opts: %+v\n", opts)
 	info, err := octx.FS.Stat(opts.Path)
-	if err != nil {
-		if !errors.Is(err, os.ErrNotExist) {
-			return st, err
-		}
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return st, err
 	}
 
 	st = st.Append(operator.StateEntry{

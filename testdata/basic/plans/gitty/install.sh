@@ -11,3 +11,5 @@ polyester sh \
     --dir /tmp/tunk \
     --target tunk \
     "make build"
+
+polyester atomic-copy --exclude ".git" /tmp/tunk /tmp/tunk2

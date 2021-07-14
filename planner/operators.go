@@ -33,6 +33,7 @@ func opCreators() []func() operator.Interface {
 		func() operator.Interface { return planop.Dependency{Args: &planop.DependencyOpts{}} },
 
 		func() operator.Interface { return fileop.Touch{Args: &fileop.TouchOpts{}} },
+		func() operator.Interface { return fileop.Mkdir{Args: &fileop.MkdirOpts{}} },
 		func() operator.Interface { return fileop.AtomicCopy{Args: &fileop.AtomicCopyOpts{}} },
 
 		func() operator.Interface { return gitop.Repo{Args: &gitop.RepoOpts{}} },

@@ -73,6 +73,7 @@ func (s State) Empty() bool {
 func (s State) Changed(other State) bool {
 	ents, oents := s.Entries, other.Entries
 	if len(ents) != len(oents) {
+		// fmt.Println("changed bc diff size")
 		return true
 	}
 	sort.Sort(stateEntries(ents))
@@ -81,21 +82,25 @@ func (s State) Changed(other State) bool {
 	for i, ent := range ents {
 		oent := oents[i]
 		if ent.Name != oent.Name {
+			// fmt.Println("changed bc diff name")
 			return true
 		}
 
 		if (ent.File == nil) != (oent.File == nil) {
+			// fmt.Println("changed bc diff file nil-ness")
 			return true
 		}
 		if ent.File != nil {
 			sf, of := ent.File, oent.File
 			if (sf.Info == nil) != (of.Info == nil) {
+				// fmt.Println("changed bc diff file info nil-ness")
 				return true
 			}
 			if sf.Info != nil &&
 				sf.Info.IsDir() != of.Info.IsDir() ||
-				sf.Info.Mode().Perm() != of.Info.Mode().Perm() ||
+				sf.Info.Mode() != of.Info.Mode() ||
 				!sf.Info.ModTime().Equal(of.Info.ModTime()) {
+				// fmt.Println(sf.Info.Name(), "changed bc diff file info", sf.Info.IsDir(), of.Info.IsDir())
 				return true
 			}
 		}

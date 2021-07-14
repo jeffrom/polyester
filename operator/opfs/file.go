@@ -10,6 +10,7 @@ type StateFileEntry struct {
 	Info     fs.FileInfo
 	SHA256   []byte
 	Contents []byte
+	// ZeroTime bool
 }
 
 func (f StateFileEntry) MarshalJSON() ([]byte, error) {
@@ -17,9 +18,13 @@ func (f StateFileEntry) MarshalJSON() ([]byte, error) {
 	if inf == nil {
 		return json.Marshal(nil)
 	}
+	modTime := inf.ModTime()
+	// if f.ZeroTime {
+	// 	modTime = time.Time{}
+	// }
 	sfi := StateFileInfo{
 		RawName:    inf.Name(),
-		RawModTime: inf.ModTime(),
+		RawModTime: modTime,
 		RawMode:    uint32(inf.Mode()),
 		RawSize:    inf.Size(),
 		SHA256:     f.SHA256,
@@ -46,8 +51,6 @@ type StateFileInfo struct {
 	RawModTime time.Time `json:"mtime,omitempty"`
 	RawMode    uint32    `json:"mode,omitempty"`
 	RawSize    int64     `json:"size,omitempty"`
-	RawIsDir   bool      `json:"json:"is_dir,omitempty"`
-	RawIsFile  bool      `json:"json:"is_file,omitempty"`
 	SHA256     []byte    `json:"checksum,omitempty"`
 	Contents   []byte    `json:"contents,omitempty"`
 }
@@ -55,6 +58,6 @@ type StateFileInfo struct {
 func (sfi StateFileInfo) Name() string       { return sfi.RawName }
 func (sfi StateFileInfo) Size() int64        { return sfi.RawSize }
 func (sfi StateFileInfo) Mode() fs.FileMode  { return fs.FileMode(sfi.RawMode) }
-func (sfi StateFileInfo) IsDir() bool        { return sfi.RawIsDir }
+func (sfi StateFileInfo) IsDir() bool        { return fs.FileMode(sfi.RawMode).IsDir() }
 func (sfi StateFileInfo) ModTime() time.Time { return sfi.RawModTime }
 func (sfi StateFileInfo) Sys() interface{}   { return nil }
