@@ -93,6 +93,7 @@ $ ./polyester apply --dir-root /tmp/mysandbox --state-dir /tmp/mystate testdata/
   - concurrent plan execution, accounting for dependencies
   - improve dryrun contract -- ie planner passes --dry-run to commands that have it otherwise execution is skipped.
   - use remote, versioned git repo / tar / exported plans
+  - prune old / unused state files
 * output formats
   - nice readable apply summaries, what changed etc
   - json log for debugging, introspection, integration testing
