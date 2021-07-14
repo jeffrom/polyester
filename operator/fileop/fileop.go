@@ -30,18 +30,18 @@ func Checksum(p string) ([]byte, error) {
 	return sha.Sum(nil), nil
 }
 
-func getStateFileGlobs(octx operator.Context, st operator.State, dest string, globs, excludes []string) (operator.State, error) {
-	allFiles, err := gatherFilesGlob(octx, globs, excludes)
+func getStateFileGlobs(ofs operator.FS, st operator.State, dest string, globs, excludes []string) (operator.State, error) {
+	allFiles, err := gatherFilesGlob(ofs, globs, excludes)
 	if err != nil {
 		return st, err
 	}
 
-	st, err = appendFiles(octx, st, true, false, allFiles...)
+	st, err = appendFiles(ofs, st, true, false, allFiles...)
 	if err != nil {
 		return st, err
 	}
 
-	info, err := octx.FS.Stat(dest)
+	info, err := ofs.Stat(dest)
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return st, err
 	}
@@ -49,13 +49,13 @@ func getStateFileGlobs(octx operator.Context, st operator.State, dest string, gl
 	dests := []string{dest}
 	if info != nil && info.IsDir() {
 		var err error
-		dests, err = gatherFilesDir(octx, []string{dest}, excludes)
+		dests, err = gatherFilesDir(ofs, []string{dest}, excludes)
 		if err != nil {
 			return st, err
 		}
 	}
 
-	st, err = appendFiles(octx, st, true, true, dests...)
+	st, err = appendFiles(ofs, st, true, true, dests...)
 	if err != nil {
 		return st, err
 	}
@@ -63,9 +63,9 @@ func getStateFileGlobs(octx operator.Context, st operator.State, dest string, gl
 }
 
 // appendFiles appends files to the state, include full mode and checksum.
-func appendFiles(octx operator.Context, st operator.State, source, target bool, files ...string) (operator.State, error) {
+func appendFiles(ofs operator.FS, st operator.State, source, target bool, files ...string) (operator.State, error) {
 	for _, file := range files {
-		info, err := octx.FS.Stat(file)
+		info, err := ofs.Stat(file)
 		if err != nil && !errors.Is(err, os.ErrNotExist) {
 			return st, err
 		}
@@ -73,7 +73,7 @@ func appendFiles(octx operator.Context, st operator.State, source, target bool, 
 		var checksum []byte
 		if info != nil && !info.IsDir() {
 			var err error
-			checksum, err = Checksum(octx.FS.Join(file))
+			checksum, err = Checksum(ofs.Join(file))
 			if err != nil {
 				return st, err
 			}
@@ -102,10 +102,10 @@ func appendFiles(octx operator.Context, st operator.State, source, target bool, 
 	return st, nil
 }
 
-func gatherFilesGlobDirOnly(octx operator.Context, globs, excludes []string) ([]string, error) {
+func gatherFilesGlobDirOnly(ofs operator.FS, globs, excludes []string) ([]string, error) {
 	var allFiles []string
 	for _, srcpat := range globs {
-		files, err := octx.FS.Glob(srcpat)
+		files, err := ofs.Glob(srcpat)
 		if err != nil {
 			return nil, err
 		}
@@ -121,15 +121,15 @@ func gatherFilesGlobDirOnly(octx operator.Context, globs, excludes []string) ([]
 	return allFiles, nil
 }
 
-func gatherFilesGlob(octx operator.Context, globs, excludes []string) ([]string, error) {
+func gatherFilesGlob(ofs operator.FS, globs, excludes []string) ([]string, error) {
 	var allFiles []string
 
 	for _, pat := range globs {
-		files, err := octx.FS.Glob(pat)
+		files, err := ofs.Glob(pat)
 		if err != nil {
 			return nil, err
 		}
-		next, err := gatherFiles(octx, files, excludes)
+		next, err := gatherFiles(ofs, files, excludes)
 		if err != nil {
 			return nil, err
 		}
@@ -138,10 +138,10 @@ func gatherFilesGlob(octx operator.Context, globs, excludes []string) ([]string,
 	return allFiles, nil
 }
 
-func gatherFiles(octx operator.Context, files, excludes []string) ([]string, error) {
+func gatherFiles(ofs operator.FS, files, excludes []string) ([]string, error) {
 	var allFiles []string
 	for _, file := range files {
-		info, err := octx.FS.Stat(file)
+		info, err := ofs.Stat(file)
 		if err != nil && !errors.Is(err, os.ErrNotExist) {
 			return nil, err
 		}
@@ -150,7 +150,7 @@ func gatherFiles(octx operator.Context, files, excludes []string) ([]string, err
 			continue
 		}
 
-		dirFiles, err := gatherFilesDir(octx, []string{file}, excludes)
+		dirFiles, err := gatherFilesDir(ofs, []string{file}, excludes)
 		if err != nil {
 			return nil, err
 		}
@@ -159,7 +159,7 @@ func gatherFiles(octx operator.Context, files, excludes []string) ([]string, err
 	return allFiles, nil
 }
 
-func gatherFilesDir(octx operator.Context, files, excludes []string) ([]string, error) {
+func gatherFilesDir(ofs operator.FS, files, excludes []string) ([]string, error) {
 	var allFiles []string
 	walkFn := func(p string, d fs.DirEntry, perr error) error {
 		if perr != nil {
@@ -174,30 +174,30 @@ func gatherFilesDir(octx operator.Context, files, excludes []string) ([]string, 
 		return nil
 	}
 	for _, file := range files {
-		if err := fs.WalkDir(octx.FS, file, walkFn); err != nil {
+		if err := fs.WalkDir(ofs, file, walkFn); err != nil {
 			return nil, fmt.Errorf("walkdir failed: %w", err)
 		}
 	}
 	return allFiles, nil
 }
 
-func copyOneOrManyFiles(octx operator.Context, destFile string, sources []string) error {
+func copyOneOrManyFiles(ofs operator.FS, destFile string, sources []string) error {
 	if len(sources) == 0 {
 		return errors.New("no files found")
 	}
 	if len(sources) == 1 {
-		return copyOneFile(octx, sources[0], destFile)
+		return copyOneFile(ofs, sources[0], destFile)
 	}
-	return copyFiles(octx, sources, destFile)
+	return copyManyFiles(ofs, sources, destFile)
 }
 
-func copyOneFile(octx operator.Context, file, destFile string) error {
-	info, err := octx.FS.Stat(file)
+func copyOneFile(ofs operator.FS, file, destFile string) error {
+	info, err := ofs.Stat(file)
 	if err != nil {
 		return err
 	}
-	src := octx.FS.Join(file)
-	dest := octx.FS.Join(destFile)
+	src := file
+	dest := destFile
 	if info.IsDir() {
 		if err := copy.Copy(src, dest); err != nil {
 			return err
@@ -210,15 +210,15 @@ func copyOneFile(octx operator.Context, file, destFile string) error {
 	return nil
 }
 
-func copyFiles(octx operator.Context, sources []string, destDir string) error {
-	dest := octx.FS.Join(destDir)
+func copyManyFiles(ofs operator.FS, sources []string, destDir string) error {
+	dest := destDir
 	for _, file := range sources {
-		info, err := octx.FS.Stat(file)
+		info, err := ofs.Stat(file)
 		if err != nil {
 			return err
 		}
 		_, srcFile := filepath.Split(file)
-		src := octx.FS.Join(file)
+		src := (file)
 
 		destPath := filepath.Join(dest, srcFile)
 		if info.IsDir() {

@@ -246,7 +246,7 @@ func (r *Planner) executeManifest(ctx context.Context, plan *Plan, opts ApplyOpt
 		return nil, err
 	}
 
-	octx := operator.NewContext(ctx, opfs.New(dirRoot))
+	octx := operator.NewContext(ctx, opfs.New(dirRoot), opfs.NewPlanDirFS(r.planDir))
 	finalRes := &Result{}
 	for _, subplan := range all {
 		// fmt.Println("executeManifest", subplan.Name)

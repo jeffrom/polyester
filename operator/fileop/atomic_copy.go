@@ -91,7 +91,7 @@ atomic copy is the same in this case.
 
 func (op AtomicCopy) GetState(octx operator.Context) (operator.State, error) {
 	opts := op.Args.(*AtomicCopyOpts)
-	st, err := getStateFileGlobs(octx, operator.State{}, opts.Dest, opts.Sources, opts.ExcludeGlobs)
+	st, err := getStateFileGlobs(octx.FS, operator.State{}, opts.Dest, opts.Sources, opts.ExcludeGlobs)
 	return st, err
 }
 
@@ -101,7 +101,7 @@ func (op AtomicCopy) Run(octx operator.Context) error {
 	if err != nil {
 		return err
 	}
-	allFiles, err := gatherFilesGlobDirOnly(octx, opts.Sources, opts.ExcludeGlobs)
+	allFiles, err := gatherFilesGlobDirOnly(octx.FS, opts.Sources, opts.ExcludeGlobs)
 	if err != nil {
 		return err
 	}

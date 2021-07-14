@@ -3,6 +3,8 @@ package operator
 import (
 	"context"
 	"io/fs"
+
+	"github.com/jeffrom/polyester/operator/opfs"
 )
 
 type ctxKey string
@@ -12,14 +14,16 @@ var gotStateKey = ctxKey("gotState")
 type Context struct {
 	context.Context
 
-	Opts interface{}
-	FS   FS
+	Opts    interface{}
+	FS      FS
+	PlanDir opfs.PlanDir
 }
 
-func NewContext(ctx context.Context, fs FS) Context {
+func NewContext(ctx context.Context, fs FS, planDir opfs.PlanDir) Context {
 	return Context{
 		Context: ctx,
 		FS:      fs,
+		PlanDir: planDir,
 	}
 }
 
@@ -29,6 +33,7 @@ func (c Context) WithValue(key, val interface{}) Context {
 		Context: ctx,
 		Opts:    c.Opts,
 		FS:      c.FS,
+		PlanDir: c.PlanDir,
 	}
 }
 
@@ -42,6 +47,7 @@ func (c Context) WithGotState(gotState bool) Context {
 		Context: ctx,
 		Opts:    c.Opts,
 		FS:      c.FS,
+		PlanDir: c.PlanDir,
 	}
 }
 
@@ -54,6 +60,6 @@ type FS interface {
 	fs.GlobFS
 	fs.ReadDirFS
 	fs.ReadFileFS
-	Abs(name string) string
 	Join(paths ...string) string
+	// Abs(name string) string
 }

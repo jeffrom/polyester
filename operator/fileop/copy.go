@@ -45,17 +45,22 @@ To copy files out of the plan directory, use pcopy.
 
 func (op Copy) GetState(octx operator.Context) (operator.State, error) {
 	opts := op.Args.(*CopyOpts)
-	st, err := getStateFileGlobs(octx, operator.State{}, opts.Dest, opts.Sources, opts.ExcludeGlobs)
+	st, err := getStateFileGlobs(octx.FS, operator.State{}, opts.Dest, opts.Sources, opts.ExcludeGlobs)
 	return st, err
 }
 
 func (op Copy) Run(octx operator.Context) error {
 	opts := op.Args.(*CopyOpts)
-	allFiles, err := gatherFilesGlobDirOnly(octx, opts.Sources, opts.ExcludeGlobs)
+	allFiles, err := gatherFilesGlobDirOnly(octx.FS, opts.Sources, opts.ExcludeGlobs)
 	if err != nil {
 		return err
 	}
-	return copyOneOrManyFiles(octx, opts.Dest, allFiles)
+
+	joinedFiles := make([]string, len(allFiles))
+	for i, file := range allFiles {
+		joinedFiles[i] = octx.FS.Join(file)
+	}
+	return copyOneOrManyFiles(octx.FS, octx.FS.Join(opts.Dest), joinedFiles)
 }
 
 func copyArgs(cmd *cobra.Command, args []string, target interface{}) error {

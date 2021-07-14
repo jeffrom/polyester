@@ -43,7 +43,7 @@ Copy files, resolving paths from the plan directory.
 
 func (op Pcopy) GetState(octx operator.Context) (operator.State, error) {
 	opts := op.Args.(*PcopyOpts)
-	st, err := getStateFileGlobs(octx, operator.State{}, opts.Dest, opts.Sources, opts.ExcludeGlobs)
+	st, err := getStateFileGlobs(octx.FS, operator.State{}, opts.Dest, opts.Sources, opts.ExcludeGlobs)
 	return st, err
 }
 
