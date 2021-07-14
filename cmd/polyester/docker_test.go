@@ -24,9 +24,21 @@ func TestDocker(t *testing.T) {
 		buildTestImage(t)
 	}
 
+	runDockerTest(t, "noop", "Noop")
 	runDockerTest(t, "basic", "Basic")
 	runDockerTest(t, "useradd", "Useradd")
 	runDockerTest(t, "apt-install", "AptInstall")
+}
+
+func TestNoop(t *testing.T) {
+	checkTestFilter(t, "noop")
+
+	planPath := Path(filepath.Join("testdata", "noop"))
+	for i := 0; i < 3; i++ {
+		if err := run([]string{"polyester", "apply", planPath}); err != nil {
+			t.Fatal(err)
+		}
+	}
 }
 
 func TestBasic(t *testing.T) {

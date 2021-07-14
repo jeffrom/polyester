@@ -27,6 +27,7 @@ func setupAllOps() {
 
 func opCreators() []func() operator.Interface {
 	return []func() operator.Interface{
+		func() operator.Interface { return operator.Noop{} },
 		func() operator.Interface { return planop.Plan{Args: &planop.PlanOpts{}} },
 		func() operator.Interface { return planop.Dependency{Args: &planop.DependencyOpts{}} },
 		func() operator.Interface { return fileop.Touch{Args: &fileop.TouchOpts{}} },
