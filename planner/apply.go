@@ -1,6 +1,7 @@
 package planner
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io/fs"
@@ -114,7 +115,7 @@ func (r *Planner) execPlanDeclaration(ctx context.Context, dir, name string, pla
 		return err
 	}
 	scriptFile := filepath.Join(dir, "_scripts", name+".sh")
-	if err := ioutil.WriteFile(scriptFile, planb, 0700); err != nil {
+	if err := ioutil.WriteFile(scriptFile, annotatePlanScript(planb), 0700); err != nil {
 		return err
 	}
 
@@ -357,4 +358,31 @@ func (r *Planner) executeOperation(octx operator.Context, op operator.Interface,
 	res.Changed = changed
 	res.Dirty = dirty
 	return res, nil
+}
+
+var planDeclBoilerplate = []byte(`# --- START polyester script boilerplate
+alias P=polyester
+
+# --- END polyester script boilerplate
+`)
+
+// annotatePlanScript adds boilerplate to plan script before executing them.
+// All it currently adds is: alias P polyester
+func annotatePlanScript(planb []byte) []byte {
+	res := make([]byte, len(planb)+len(planDeclBoilerplate))
+	// if the first line is a shebang, put the boilerplate on the second line
+	if bytes.HasPrefix(planb, []byte("#!")) {
+		idx := bytes.Index(planb, []byte("\n"))
+		if idx == -1 || len(planb) < idx+1 {
+			return planb
+		}
+		firstLine := planb[:idx+1]
+		copy(res, firstLine)
+		copy(res[idx+1:], planDeclBoilerplate)
+		copy(res[idx+1+len(planDeclBoilerplate):], planb[idx+1:])
+		return res
+	}
+	copy(res, planDeclBoilerplate)
+	copy(res[len(planDeclBoilerplate):], planb)
+	return res
 }
