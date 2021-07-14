@@ -192,6 +192,7 @@ func copyOneOrManyFiles(ofs operator.FS, destFile string, sources []string) erro
 }
 
 func copyOneFile(ofs operator.FS, file, destFile string) error {
+	// fmt.Println("copyOneFile", file, destFile)
 	info, err := ofs.Stat(file)
 	if err != nil {
 		return err
@@ -218,7 +219,7 @@ func copyManyFiles(ofs operator.FS, sources []string, destDir string) error {
 			return err
 		}
 		_, srcFile := filepath.Split(file)
-		src := (file)
+		src := file
 
 		destPath := filepath.Join(dest, srcFile)
 		if info.IsDir() {

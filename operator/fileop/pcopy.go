@@ -44,12 +44,21 @@ Copy files, resolving paths from the plan directory.
 func (op Pcopy) GetState(octx operator.Context) (operator.State, error) {
 	opts := op.Args.(*PcopyOpts)
 	st, err := getStateFileGlobs(octx.FS, operator.State{}, opts.Dest, opts.Sources, opts.ExcludeGlobs)
+	// TODO get plandir state as well
 	return st, err
 }
 
 func (op Pcopy) Run(octx operator.Context) error {
-	// opts := op.Args.(*PcopyOpts)
-	return nil
+	opts := op.Args.(*PcopyOpts)
+	allFiles, err := gatherFilesGlobDirOnly(octx.PlanDir, opts.Sources, opts.ExcludeGlobs)
+	if err != nil {
+		return err
+	}
+	joinedFiles := make([]string, len(allFiles))
+	for i, file := range allFiles {
+		joinedFiles[i] = octx.PlanDir.Join(file)
+	}
+	return copyOneOrManyFiles(octx.PlanDir, octx.FS.Join(opts.Dest), joinedFiles)
 }
 
 func pcopyArgs(cmd *cobra.Command, args []string, target interface{}) error {

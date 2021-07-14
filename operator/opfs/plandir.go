@@ -4,6 +4,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/bmatcuk/doublestar/v4"
 )
@@ -31,16 +32,19 @@ func NewPlanDirFS(dir string) fsPlanDir {
 func (pd fsPlanDir) Open(name string) (fs.File, error) { return pd.dirFS.Open(name) }
 
 func (pd fsPlanDir) Stat(name string) (fs.FileInfo, error) {
+	name = strings.TrimPrefix(name, pd.dir+"/")
 	p := filepath.Join(pd.dir, name)
 	return os.Stat(p)
 }
 
 func (pd fsPlanDir) ReadDir(name string) ([]fs.DirEntry, error) {
+	name = strings.TrimPrefix(name, pd.dir+"/")
 	p := filepath.Join(pd.dir, name)
 	return os.ReadDir(p)
 }
 
 func (pd fsPlanDir) ReadFile(name string) ([]byte, error) {
+	name = strings.TrimPrefix(name, pd.dir+"/")
 	p := filepath.Join(pd.dir, name)
 	return os.ReadFile(p)
 }
