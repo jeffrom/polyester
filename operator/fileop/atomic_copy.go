@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/fs"
 	"os"
 	"path/filepath"
 
@@ -13,7 +12,6 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/jeffrom/polyester/operator"
-	"github.com/jeffrom/polyester/operator/opfs"
 )
 
 type AtomicCopyOpts struct {
@@ -93,132 +91,8 @@ atomic copy is the same in this case.
 
 func (op AtomicCopy) GetState(octx operator.Context) (operator.State, error) {
 	opts := op.Args.(*AtomicCopyOpts)
-	st := operator.State{}
-	var allFiles []string
-	for _, srcpat := range opts.Sources {
-		files, err := octx.FS.Glob(srcpat)
-		if err != nil {
-			return st, err
-		}
-		for _, file := range files {
-			if excl, err := excluded(file, opts.ExcludeGlobs); err != nil {
-				return st, err
-			} else if excl {
-				continue
-			}
-
-			info, err := octx.FS.Stat(file)
-			if err != nil && !errors.Is(err, os.ErrNotExist) {
-				return st, err
-			}
-			if info == nil || !info.IsDir() {
-				allFiles = append(allFiles, file)
-				continue
-			}
-
-			walkFn := func(p string, d fs.DirEntry, perr error) error {
-				if perr != nil {
-					return perr
-				}
-				if excl, err := excluded(p, opts.ExcludeGlobs); err != nil {
-					return err
-				} else if excl {
-					return nil
-				}
-				allFiles = append(allFiles, p)
-				return nil
-			}
-			if err := fs.WalkDir(octx.FS, file, walkFn); err != nil {
-				return st, fmt.Errorf("source walkdir failed: %w", err)
-			}
-		}
-	}
-
-	for _, file := range allFiles {
-		// fmt.Println("GetState file:", file, octx.FS.Join(file))
-		info, err := octx.FS.Stat(file)
-		if err != nil && !errors.Is(err, os.ErrNotExist) {
-			return st, err
-		}
-
-		var checksum []byte
-		if info != nil && !info.IsDir() {
-			var err error
-			checksum, err = Checksum(octx.FS.Join(file))
-			if err != nil {
-				return st, err
-			}
-		}
-
-		st = st.Append(operator.StateEntry{
-			Name: file,
-			File: &opfs.StateFileEntry{
-				Info:   info,
-				SHA256: checksum,
-			},
-		})
-
-	}
-
-	info, err := octx.FS.Stat(opts.Dest)
-	if err != nil && !errors.Is(err, os.ErrNotExist) {
-		return st, err
-	}
-
-	dests := []string{opts.Dest}
-	if info != nil && info.IsDir() {
-		dests = []string{}
-		walkFn := func(p string, d fs.DirEntry, perr error) error {
-			if perr != nil {
-				return perr
-			}
-			if excl, err := excluded(p, opts.ExcludeGlobs); err != nil {
-				return err
-			} else if excl {
-				return nil
-			}
-			dests = append(dests, p)
-			return nil
-		}
-		if err := fs.WalkDir(octx.FS, opts.Dest, walkFn); err != nil {
-			return st, fmt.Errorf("dest walkdir failed: %w", err)
-		}
-	}
-
-	for _, dest := range dests {
-		info, err := octx.FS.Stat(dest)
-		if err != nil && !errors.Is(err, os.ErrNotExist) {
-			return st, err
-		}
-		var checksum []byte
-		if info != nil && !info.IsDir() {
-			var err error
-			checksum, err = Checksum(octx.FS.Join(dest))
-			if err != nil {
-				return st, err
-			}
-		}
-
-		// include both source and target state here, since we want to rerun if the
-		// target changes.
-		st = st.Append(operator.StateEntry{
-			Name: dest,
-			File: &opfs.StateFileEntry{
-				Info:   info,
-				SHA256: checksum,
-			},
-		})
-		st = st.Append(operator.StateEntry{
-			Name:   dest,
-			Target: true,
-			File: &opfs.StateFileEntry{
-				Info:   info,
-				SHA256: checksum,
-			},
-		})
-	}
-
-	return st, nil
+	st, err := getStateFileGlobs(octx, operator.State{}, opts.Dest, opts.Sources, opts.ExcludeGlobs)
+	return st, err
 }
 
 func (op AtomicCopy) Run(octx operator.Context) error {
@@ -227,21 +101,11 @@ func (op AtomicCopy) Run(octx operator.Context) error {
 	if err != nil {
 		return err
 	}
-	var allFiles []string
-	for _, srcpat := range opts.Sources {
-		files, err := octx.FS.Glob(srcpat)
-		if err != nil {
-			return err
-		}
-		for _, file := range files {
-			if excl, err := excluded(file, opts.ExcludeGlobs); err != nil {
-				return err
-			} else if excl {
-				continue
-			}
-			allFiles = append(allFiles, file)
-		}
+	allFiles, err := gatherFilesGlobDirOnly(octx, opts.Sources, opts.ExcludeGlobs)
+	if err != nil {
+		return err
 	}
+
 	if len(allFiles) == 0 {
 		return fmt.Errorf("no files matched pattern(s): %v", opts.Sources)
 	} else if len(allFiles) == 1 {

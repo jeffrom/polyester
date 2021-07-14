@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eux
 
-testdir=/tmp/test
+testdir=/tmp/test/atomic-copy
 
 polyester mkdir $testdir/a $testdir/b
 polyester mkdir -m 0700 $testdir/c
