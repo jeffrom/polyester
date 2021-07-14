@@ -28,12 +28,19 @@ func setupAllOps() {
 func opCreators() []func() operator.Interface {
 	return []func() operator.Interface{
 		func() operator.Interface { return operator.Noop{} },
+
 		func() operator.Interface { return planop.Plan{Args: &planop.PlanOpts{}} },
 		func() operator.Interface { return planop.Dependency{Args: &planop.DependencyOpts{}} },
+
 		func() operator.Interface { return fileop.Touch{Args: &fileop.TouchOpts{}} },
+		func() operator.Interface { return fileop.AtomicCopy{Args: &fileop.AtomicCopyOpts{}} },
+
 		func() operator.Interface { return gitop.Repo{Args: &gitop.RepoOpts{}} },
+
 		func() operator.Interface { return pkgop.AptInstall{Args: &pkgop.AptInstallOpts{}} },
+
 		func() operator.Interface { return shellop.Shell{Args: &shellop.ShellOpts{}} },
+
 		func() operator.Interface { return userop.Useradd{Args: &userop.UseraddOpts{}} },
 	}
 }
