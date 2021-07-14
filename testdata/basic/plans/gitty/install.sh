@@ -12,4 +12,7 @@ polyester sh \
     --target tunk \
     "make build"
 
-polyester atomic-copy --exclude ".git" /tmp/tunk /tmp/tunk2
+polyester atomic-copy \
+    --exclude "/**/.git" \
+    --exclude "/**/.git/**" \
+    /tmp/tunk /tmp/tunk2

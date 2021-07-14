@@ -4,9 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 
+	"github.com/bmatcuk/doublestar/v4"
 	"github.com/otiai10/copy"
 	"github.com/spf13/cobra"
 
@@ -104,8 +106,31 @@ func (op AtomicCopy) GetState(octx operator.Context) (operator.State, error) {
 			} else if excl {
 				continue
 			}
-			allFiles = append(allFiles, file)
-			// TODO probably need to traverse dirs
+
+			info, err := octx.FS.Stat(file)
+			if err != nil && !errors.Is(err, os.ErrNotExist) {
+				return st, err
+			}
+			if info == nil || !info.IsDir() {
+				allFiles = append(allFiles, file)
+				continue
+			}
+
+			walkFn := func(p string, d fs.DirEntry, perr error) error {
+				if perr != nil {
+					return perr
+				}
+				if excl, err := excluded(p, opts.ExcludeGlobs); err != nil {
+					return err
+				} else if excl {
+					return nil
+				}
+				allFiles = append(allFiles, p)
+				return nil
+			}
+			if err := fs.WalkDir(octx.FS, file, walkFn); err != nil {
+				return st, fmt.Errorf("walkdir failed: %w", err)
+			}
 		}
 	}
 
@@ -119,7 +144,7 @@ func (op AtomicCopy) GetState(octx operator.Context) (operator.State, error) {
 		var checksum []byte
 		if info != nil && !info.IsDir() {
 			var err error
-			checksum, err = Checksum(file)
+			checksum, err = Checksum(octx.FS.Join(file))
 			if err != nil {
 				return st, err
 			}
@@ -135,6 +160,7 @@ func (op AtomicCopy) GetState(octx operator.Context) (operator.State, error) {
 
 	}
 
+	// TODO probably need to traverse dirs
 	info, err := octx.FS.Stat(opts.Dest)
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return st, err
@@ -142,7 +168,7 @@ func (op AtomicCopy) GetState(octx operator.Context) (operator.State, error) {
 	var checksum []byte
 	if info != nil && !info.IsDir() {
 		var err error
-		checksum, err = Checksum(opts.Dest)
+		checksum, err = Checksum(octx.FS.Join(opts.Dest))
 		if err != nil {
 			return st, err
 		}
@@ -271,16 +297,23 @@ func (op AtomicCopy) Run(octx operator.Context) error {
 	return os.RemoveAll(tmpDir)
 }
 
+func excluded(p string, globs []string) (bool, error) {
+	for _, glob := range globs {
+		if ok, err := doublestar.Match(glob, p); err != nil {
+			return ok, err
+		} else if ok {
+			return ok, nil
+		}
+	}
+	return false, nil
+}
+
 func atomicCopyArgs(cmd *cobra.Command, args []string, target interface{}) error {
 	t := target.(*AtomicCopyOpts)
 	end := len(args) - 1
 	t.Sources = args[:end]
 	t.Dest = args[end]
 	return nil
-}
-
-func excluded(p string, globs []string) (bool, error) {
-	return false, nil
 }
 
 func copyFile(src, dest string) error {
