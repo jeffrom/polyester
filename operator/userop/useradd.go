@@ -1,6 +1,12 @@
 package userop
 
 import (
+	"errors"
+	"os"
+	"os/exec"
+	"os/user"
+
+	"github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"
 
 	"github.com/jeffrom/polyester/operator"
@@ -53,13 +59,92 @@ func (op Useradd) Info() operator.Info {
 }
 
 func (op Useradd) GetState(octx operator.Context) (operator.State, error) {
+	opts := op.Args.(*UseraddOpts)
 	st := operator.State{}
+	// TODO would be nice be able to refer to state in Run
+	u, err := Lookup(opts.User)
+	if err != nil && !errors.Is(err, user.UnknownUserError(opts.User)) {
+		return st, err
+	}
+	st = st.Append(operator.StateEntry{
+		Name: "~" + opts.User,
+		KV:   u.ToMap(),
+	})
+	// fmt.Printf("da user: %+v\n", u.ToMap())
+	// st.WriteTo(os.Stdout)
 	return st, nil
 }
 
 func (op Useradd) Run(octx operator.Context) error {
+	opts := op.Args.(*UseraddOpts)
+	u, err := Lookup(opts.User)
+	if err != nil && !errors.Is(err, user.UnknownUserError(opts.User)) {
+		return err
+	}
+	if u == nil {
+		return callUseradd(octx, opts)
+	}
+
+	if err := callUsermod(octx, u, opts); err != nil {
+		return err
+	}
+
 	// NOTE can use chsh to change the user login shell
 	return nil
+}
+
+func callUseradd(octx operator.Context, opts *UseraddOpts) error {
+	args := []string{}
+	if opts.Shell != "" {
+		args = append(args, "--shell", opts.Shell)
+	}
+	if opts.CreateHomeDir != "" {
+		args = append(args, "--home-dir", opts.CreateHomeDir)
+	}
+	if opts.CreateHome {
+		args = append(args, "--create-home")
+	}
+	if opts.Comment != "" {
+		args = append(args, "--comment", opts.Comment)
+	}
+	if opts.SystemUser {
+		args = append(args, "--system")
+	}
+	if opts.CreateUserGroup {
+		args = append(args, "--user-group")
+	}
+	args = append(args, opts.User)
+
+	cmd := exec.CommandContext(octx.Context, "useradd", args...)
+	if isatty.IsTerminal(os.Stdout.Fd()) {
+		cmd.Stdin = os.Stdin
+	}
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
+}
+
+func callUsermod(octx operator.Context, curr *User, opts *UseraddOpts) error {
+	args := []string{}
+	if curr.Shell != opts.Shell {
+		args = append(args, "--shell", opts.Shell)
+	}
+	if curr.Name != opts.Comment {
+		args = append(args, "--comment", opts.Comment)
+	}
+	if curr.HomeDir != opts.CreateHomeDir {
+		args = append(args, "--home", opts.CreateHomeDir)
+	}
+
+	args = append(args, opts.User)
+
+	cmd := exec.CommandContext(octx.Context, "usermod", args...)
+	if isatty.IsTerminal(os.Stdout.Fd()) {
+		cmd.Stdin = os.Stdin
+	}
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
 }
 
 func useraddArgs(cmd *cobra.Command, args []string, target interface{}) error {

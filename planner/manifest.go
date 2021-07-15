@@ -64,8 +64,7 @@ func (r *Planner) pruneState(plan *Plan, stateDir string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("prune", r.planFile)
-	if mDir != r.planDir || r.planFile != "polyester.sh" {
+	if mDir != r.planDir || r.planFile != "polyester.sh" && r.planFile != "" {
 		fmt.Println("skipping prune since a manifest is not being executed")
 		return nil
 	}

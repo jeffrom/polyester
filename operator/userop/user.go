@@ -27,6 +27,20 @@ func Lookup(username string) (*User, error) {
 	}, err
 }
 
+func (u *User) ToMap() map[string]string {
+	if u == nil {
+		return nil
+	}
+	return map[string]string{
+		"uid":      u.Uid,
+		"gid":      u.Gid,
+		"username": u.Username,
+		"name":     u.Name,
+		"home":     u.HomeDir,
+		"shell":    u.Shell,
+	}
+}
+
 func lookupShell(username string) (string, error) {
 	f, err := os.Open(userFile)
 	if err != nil {
