@@ -7,13 +7,16 @@ import (
 )
 
 type UseraddOpts struct {
-	User            string `json:"user"`
-	Shell           string `json:"shell,omitempty"`
-	CreateHomeDir   string `json:"home_dir,omitempty"`
-	Comment         string `json:"comment,omitempty"`
-	CreateHome      bool   `json:"create_home,omitempty"`
-	SystemUser      bool   `json:"system,omitempty"`
-	CreateUserGroup bool   `json:"user_group,omitempty"`
+	User            string   `json:"user"`
+	Shell           string   `json:"shell,omitempty"`
+	CreateHomeDir   string   `json:"home_dir,omitempty"`
+	Comment         string   `json:"comment,omitempty"`
+	CreateHome      bool     `json:"create_home,omitempty"`
+	SystemUser      bool     `json:"system,omitempty"`
+	CreateUserGroup bool     `json:"user_group,omitempty"`
+	Groups          []string `json:"groups,omitempty"`
+	AddGroups       []string `json:"add_groups,omitempty"`
+	RemoveGroups    []string `json:"remove_groups,omitempty"`
 }
 
 type Useradd struct {
@@ -35,6 +38,9 @@ func (op Useradd) Info() operator.Info {
 	flags.BoolVarP(&opts.CreateHome, "create-home", "m", false, "create home directory")
 	flags.BoolVarP(&opts.SystemUser, "system", "r", false, "create a system account")
 	flags.BoolVarP(&opts.CreateUserGroup, "user-group", "U", false, "create group with same name as user")
+	flags.StringArrayVar(&opts.Groups, "group", nil, "exclusive list of group `name`s")
+	flags.StringArrayVar(&opts.AddGroups, "add-group", nil, "ensure user is added to group `name`s")
+	flags.StringArrayVar(&opts.RemoveGroups, "remove-group", nil, "ensure user removed from group `name`s")
 
 	return &operator.InfoData{
 		OpName: "useradd",
@@ -52,6 +58,7 @@ func (op Useradd) GetState(octx operator.Context) (operator.State, error) {
 }
 
 func (op Useradd) Run(octx operator.Context) error {
+	// NOTE can use chsh to change the user login shell
 	return nil
 }
 

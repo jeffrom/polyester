@@ -29,13 +29,9 @@ import (
 func (r *Planner) setupState(plan *Plan, opts ApplyOpts) (string, error) {
 	// 1. figure out if this is a single script run & find the manifest file
 	// (the nearest parent with polyester.sh)
-	mDir := r.planDir
-	for mDir != "/" && mDir != "" {
-		cand := filepath.Join(mDir, "polyester.sh")
-		if _, err := os.Stat(cand); err == nil {
-			break
-		}
-		mDir, _ = filepath.Split(filepath.Clean(mDir))
+	mDir, err := r.findManifestDir()
+	if err != nil {
+		return "", err
 	}
 	fmt.Println("manifest dir is:", mDir)
 
@@ -63,6 +59,17 @@ func (r *Planner) setupState(plan *Plan, opts ApplyOpts) (string, error) {
 }
 
 func (r *Planner) pruneState(plan *Plan, stateDir string) error {
+	// don't prune for single subplan runs, only for manifests.
+	mDir, err := r.findManifestDir()
+	if err != nil {
+		return err
+	}
+	fmt.Println("prune", r.planFile)
+	if mDir != r.planDir || r.planFile != "polyester.sh" {
+		fmt.Println("skipping prune since a manifest is not being executed")
+		return nil
+	}
+
 	// traverse the plans, calculate all checksums, and remove anything in the
 	// state dir that doesn't match one of them.
 
@@ -94,6 +101,21 @@ func (r *Planner) pruneState(plan *Plan, stateDir string) error {
 		return fmt.Errorf("failed to walk state dir: %w", err)
 	}
 	return nil
+}
+
+func (r *Planner) findManifestDir() (string, error) {
+	mDir := r.planDir
+	for mDir != "/" && mDir != "" {
+		cand := filepath.Join(mDir, "polyester.sh")
+		if _, err := os.Stat(cand); err == nil {
+			break
+		}
+		mDir, _ = filepath.Split(filepath.Clean(mDir))
+	}
+	if mDir == "/" || mDir == "" {
+		return r.planDir, errors.New("manifest: polyester.sh not found")
+	}
+	return mDir, nil
 }
 
 func (r *Planner) gatherOpKeys(plan *Plan, stateDir string, keys map[string]bool) (map[string]bool, error) {
