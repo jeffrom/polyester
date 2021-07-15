@@ -25,22 +25,24 @@ func New(root string) FS {
 
 func (fs FS) Open(name string) (fs.File, error) { return fs.dirFS.Open(name) }
 
+func (fs FS) cleanPath(name string) string {
+	p := strings.TrimPrefix(name, fs.root+"/")
+	if name != fs.root {
+		p = filepath.Join(fs.root, name)
+	}
+	return p
+}
+
 func (fs FS) Stat(name string) (fs.FileInfo, error) {
-	name = strings.TrimPrefix(name, fs.root+"/")
-	p := filepath.Join(fs.root, name)
-	return os.Stat(p)
+	return os.Stat(fs.cleanPath(name))
 }
 
 func (fs FS) ReadDir(name string) ([]fs.DirEntry, error) {
-	name = strings.TrimPrefix(name, fs.root+"/")
-	p := filepath.Join(fs.root, name)
-	return os.ReadDir(p)
+	return os.ReadDir(fs.cleanPath(name))
 }
 
 func (fs FS) ReadFile(name string) ([]byte, error) {
-	name = strings.TrimPrefix(name, fs.root+"/")
-	p := filepath.Join(fs.root, name)
-	return os.ReadFile(p)
+	return os.ReadFile(fs.cleanPath(name))
 }
 
 func (fs FS) Glob(pattern string) ([]string, error) {

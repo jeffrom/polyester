@@ -62,7 +62,10 @@ func (r *Planner) Apply(ctx context.Context, opts ApplyOpts) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("current directory: %s\nplan directory: %s\ncompiling plan: %s\n", wd, strings.TrimPrefix(planDir, wd+"/"), strings.TrimPrefix(filepath.Join(r.rootDir, pfPath), wd+"/"))
+	fmt.Printf("current directory: %s\nplan directory: %s\ncompiling plan: %s\n",
+		wd,
+		strings.TrimPrefix(planDir, wd+"/"),
+		strings.TrimPrefix(filepath.Join(r.rootDir, pfPath), wd+"/"))
 
 	tmpDir, plan, err := r.compileMainPlan(ctx, pb)
 	if err != nil {
@@ -74,8 +77,15 @@ func (r *Planner) Apply(ctx context.Context, opts ApplyOpts) (*Result, error) {
 	// 	return nil, err
 	// }
 
-	res, err := r.executeManifest(ctx, plan, opts)
+	stateDir, err := r.setupState(plan, opts)
 	if err != nil {
+		return nil, err
+	}
+	res, err := r.executePlans(ctx, plan, stateDir, opts)
+	if err != nil {
+		return nil, err
+	}
+	if err := r.pruneState(plan, stateDir); err != nil {
 		return nil, err
 	}
 
@@ -248,7 +258,7 @@ func (r *Planner) resolveOnePlan(ctx context.Context, plan *Plan, dir string, al
 	return nil
 }
 
-func (r *Planner) executeManifest(ctx context.Context, plan *Plan, opts ApplyOpts) (*Result, error) {
+func (r *Planner) executePlans(ctx context.Context, plan *Plan, stateDir string, opts ApplyOpts) (*Result, error) {
 	dirRoot := opts.DirRoot
 	all, err := plan.All()
 	if err != nil {
@@ -259,7 +269,7 @@ func (r *Planner) executeManifest(ctx context.Context, plan *Plan, opts ApplyOpt
 	finalRes := &Result{}
 	for _, subplan := range all {
 		// fmt.Println("executeManifest", subplan.Name)
-		res, err := r.executePlan(octx, subplan, opts)
+		res, err := r.executePlan(octx, subplan, stateDir, opts)
 		if err != nil {
 			return finalRes, err
 		}
@@ -272,8 +282,8 @@ func (r *Planner) executeManifest(ctx context.Context, plan *Plan, opts ApplyOpt
 }
 
 // executePlan runs a single plan
-func (r *Planner) executePlan(octx operator.Context, plan *Plan, opts ApplyOpts) (*PlanResult, error) {
-	prevs, currs, err := r.readOpStates(octx, plan, opts)
+func (r *Planner) executePlan(octx operator.Context, plan *Plan, stateDir string, opts ApplyOpts) (*PlanResult, error) {
+	prevs, currs, err := r.readOpStates(octx, plan, stateDir, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -283,7 +293,7 @@ func (r *Planner) executePlan(octx operator.Context, plan *Plan, opts ApplyOpts)
 	dirty := false
 	finalRes := &PlanResult{Name: plan.Name}
 	for i, op := range plan.Operations {
-		res, err := r.executeOperation(octx, op, opts, dirty, prevs[i], currs[i])
+		res, err := r.executeOperation(octx, op, stateDir, opts, dirty, prevs[i], currs[i])
 		if err != nil {
 			return nil, err
 		}
@@ -301,11 +311,11 @@ func (r *Planner) executePlan(octx operator.Context, plan *Plan, opts ApplyOpts)
 	return finalRes, nil
 }
 
-func (r *Planner) readOpStates(octx operator.Context, plan *Plan, opts ApplyOpts) ([]operator.State, []operator.State, error) {
+func (r *Planner) readOpStates(octx operator.Context, plan *Plan, stateDir string, opts ApplyOpts) ([]operator.State, []operator.State, error) {
 	var prevs []operator.State
 	var currs []operator.State
 	for _, op := range plan.Operations {
-		prev, curr, err := r.readOpState(octx, op, opts)
+		prev, curr, err := r.readOpState(octx, op, stateDir, opts)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -315,7 +325,7 @@ func (r *Planner) readOpStates(octx operator.Context, plan *Plan, opts ApplyOpts
 	return prevs, currs, nil
 }
 
-func (r *Planner) readOpState(octx operator.Context, op operator.Interface, opts ApplyOpts) (operator.State, operator.State, error) {
+func (r *Planner) readOpState(octx operator.Context, op operator.Interface, stateDir string, opts ApplyOpts) (operator.State, operator.State, error) {
 	info := op.Info()
 	name := info.Name()
 
@@ -325,7 +335,7 @@ func (r *Planner) readOpState(octx operator.Context, op operator.Interface, opts
 	}
 
 	data := info.Data()
-	prevst, err := readPrevState(data, opts.StateDir)
+	prevst, err := readPrevState(data, stateDir)
 	if err != nil {
 		return prevst, operator.State{}, err
 	}
@@ -336,9 +346,8 @@ func (r *Planner) readOpState(octx operator.Context, op operator.Interface, opts
 	return prevst, st, nil
 }
 
-func (r *Planner) executeOperation(octx operator.Context, op operator.Interface, opts ApplyOpts, dirty bool, prevst, st operator.State) (*OperationResult, error) {
+func (r *Planner) executeOperation(octx operator.Context, op operator.Interface, stateDir string, opts ApplyOpts, dirty bool, prevst, st operator.State) (*OperationResult, error) {
 	prevDirty := dirty
-	stateDir := opts.StateDir
 	info := op.Info()
 	name := info.Name()
 	// skip planops because planner handles running them outside this context

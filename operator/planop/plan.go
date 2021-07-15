@@ -37,13 +37,10 @@ func (op Plan) Info() operator.Info {
 
 func (op Plan) GetState(octx operator.Context) (operator.State, error) {
 	st := operator.State{}
-
 	return st, nil
 }
 
-func (op Plan) Run(octx operator.Context) error {
-	return nil
-}
+func (op Plan) Run(octx operator.Context) error { return nil }
 
 func planArgs(cmd *cobra.Command, args []string, target interface{}) error {
 	t := target.(*PlanOpts)

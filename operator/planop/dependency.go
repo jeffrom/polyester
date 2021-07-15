@@ -40,9 +40,7 @@ func (op Dependency) GetState(octx operator.Context) (operator.State, error) {
 	return st, nil
 }
 
-func (op Dependency) Run(octx operator.Context) error {
-	return nil
-}
+func (op Dependency) Run(octx operator.Context) error { return nil }
 
 func dependencyArgs(cmd *cobra.Command, args []string, target interface{}) error {
 	t := target.(*DependencyOpts)
