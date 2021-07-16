@@ -1,4 +1,7 @@
 // Package fileop contains filesystem-related operators.
+//
+// TODO have cp op that works exactly the same as gnu cp, then have cp-dir,
+// cp-atomic, cp-plan, cp-secret
 package fileop
 
 import (

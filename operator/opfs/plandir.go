@@ -92,6 +92,7 @@ func (pd fsPlanDir) Resolve(kind string, pats []string) ([]string, error) {
 		if len(pat) > 0 && pat[0] == filepath.Separator {
 			return nil, fmt.Errorf("plandir copy: absolute path disallowed (%s)", pat)
 		}
+		// TODO something unexpected happening here
 		if len(pat) > 1 && pat[0] == '.' && pat[1] == filepath.Separator {
 			pat = filepath.Join(planDir, pat)
 		}

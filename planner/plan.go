@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -16,6 +17,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/jeffrom/polyester/operator"
+	"github.com/jeffrom/polyester/operator/planop"
 )
 
 type Plan struct {
@@ -25,14 +27,22 @@ type Plan struct {
 	Dependencies []*Plan              `json:"dependencies,omitempty"`
 }
 
-func ReadFile(p string) (*Plan, error) {
+func ReadPlan(p string) (*Plan, error) {
+	return readPlanFile(p, false)
+}
+
+func ResolvePlan(p string) (*Plan, error) {
+	return readPlanFile(p, true)
+}
+
+func readPlanFile(p string, resolve bool) (*Plan, error) {
 	f, err := os.Open(p)
 	if err != nil {
 		return nil, err
 	}
 	defer f.Close()
-	_, planName := filepath.Split(p)
-	planName = strings.SplitN(planName, ".", 2)[0]
+	planDir, planFile := filepath.Split(p)
+	planName := strings.SplitN(planFile, ".", 2)[0]
 
 	var ops []operator.Interface
 	buf := &bytes.Buffer{}
@@ -73,9 +83,65 @@ func ReadFile(p string) (*Plan, error) {
 	if op != nil {
 		ops = append(ops, op)
 	}
+
+	var deps []*Plan
+	var plans []*Plan
+	if resolve && planFile == "plan.yaml" {
+		spRoot := filepath.Join(planDir, "plans")
+		var subplanFiles []string
+		walkFn := func(p string, d fs.DirEntry, perr error) error {
+			if perr != nil {
+				return perr
+			}
+			if p == spRoot {
+				return nil
+			}
+
+			// fmt.Println("ARRR", p)
+			subplanFiles = append(subplanFiles, p)
+			return nil
+		}
+		err := filepath.WalkDir(spRoot, walkFn)
+		if err != nil {
+			return nil, err
+		}
+
+		subplans := make(map[string]*Plan)
+		for _, spFile := range subplanFiles {
+			sp, err := ReadPlan(spFile)
+			// fmt.Println("read", spFile, err, sp.Name)
+			if err != nil {
+				return nil, err
+			}
+			subplans[sp.Name] = sp
+		}
+
+		// TODO this needs to be recursive
+		for _, op := range ops {
+			info := op.Info()
+			name := info.Name()
+			data := info.Data()
+			targ := data.Command.Target
+			switch name {
+			case "plan":
+				args := targ.(*planop.PlanOpts).Plans
+				for _, arg := range args {
+					plans = append(plans, subplans[arg])
+				}
+			case "dependency":
+				args := targ.(*planop.DependencyOpts).Plans
+				for _, arg := range args {
+					deps = append(deps, subplans[arg])
+				}
+			}
+		}
+	}
+
 	return &Plan{
-		Name:       planName,
-		Operations: ops,
+		Name:         planName,
+		Operations:   ops,
+		Dependencies: deps,
+		Plans:        plans,
 	}, nil
 }
 

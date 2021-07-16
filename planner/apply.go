@@ -67,15 +67,19 @@ func (r *Planner) Apply(ctx context.Context, opts ApplyOpts) (*Result, error) {
 		strings.TrimPrefix(planDir, wd+"/"),
 		strings.TrimPrefix(filepath.Join(r.rootDir, pfPath), wd+"/"))
 
-	tmpDir, plan, err := r.compileMainPlan(ctx, pb)
+	tmpDir, err := r.getIntermediatePlanDir(opts)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("tmpdir:", tmpDir)
-	// XXX want to do something smart so single runs don't clobber everything else
-	// if err := pruneState(plan, opts.StateDir); err != nil {
-	// 	return nil, err
-	// }
+	plan, err := r.compileMainPlan(ctx, tmpDir, pb)
+	if err != nil {
+		return nil, err
+	}
+	fmt.Println("temp dir:", tmpDir)
+
+	if err := r.checkPlan(ctx, plan, tmpDir, opts); err != nil {
+		return nil, err
+	}
 
 	stateDir, err := r.setupState(plan, opts)
 	if err != nil {
@@ -110,19 +114,22 @@ func (r *Planner) resolvePlanDir(ctx context.Context) (string, error) {
 	return lastMatch, nil
 }
 
-// compileMainPlan writes a single plan, and any of its dependencies, into the
-// local filesystem.
-func (r *Planner) compileMainPlan(ctx context.Context, planb []byte) (string, *Plan, error) {
+func (r *Planner) getIntermediatePlanDir(opts ApplyOpts) (string, error) {
 	tmpDir, err := ioutil.TempDir("", "polyester")
 	if err != nil {
-		return "", nil, err
+		return "", err
 	}
+	return tmpDir, nil
+}
 
+// compileMainPlan writes a single plan, and any of its dependencies, into the
+// local filesystem.
+func (r *Planner) compileMainPlan(ctx context.Context, tmpDir string, planb []byte) (*Plan, error) {
 	if err := r.execPlanDeclaration(ctx, tmpDir, "plan", planb); err != nil {
-		return tmpDir, nil, err
+		return nil, err
 	}
 	plan, err := r.resolvePlan(ctx, tmpDir)
-	return tmpDir, plan, err
+	return plan, err
 }
 
 func (r *Planner) execPlanDeclaration(ctx context.Context, dir, name string, planb []byte) error {
@@ -137,6 +144,10 @@ func (r *Planner) execPlanDeclaration(ctx context.Context, dir, name string, pla
 		return err
 	}
 
+	if err := r.validateScript(scriptFile); err != nil {
+		return err
+	}
+
 	var planFile string
 	if name == "plan" {
 		// main plan case
@@ -148,29 +159,9 @@ func (r *Planner) execPlanDeclaration(ctx context.Context, dir, name string, pla
 	environ := []string{
 		fmt.Sprintf("_POLY_PLAN=%s", planFile),
 	}
-	// make sure we're using the current polyester binary for compilation
-	abs, err := filepath.Abs(os.Args[0])
+	environ, err := addSelfPathToEnviron(environ)
 	if err != nil {
 		return err
-	}
-	selfDir, _ := filepath.Split(abs)
-	selfDir = filepath.Clean(selfDir)
-	found := false
-	for i, env := range environ {
-		parts := strings.SplitN(env, "=", 2)
-		key := parts[0]
-		if key != "PATH" {
-			continue
-		}
-
-		environ[i] = selfDir + ":" + env
-		// fmt.Println("set $PATH=", environ[i])
-		found = true
-		break
-	}
-	if !found {
-		pathEnv := fmt.Sprintf("PATH=%s:/bin:/usr/bin:/usr/local/bin", selfDir)
-		environ = append(environ, pathEnv)
 	}
 
 	cmd := exec.CommandContext(ctx, scriptFile)
@@ -189,7 +180,7 @@ func (r *Planner) execPlanDeclaration(ctx context.Context, dir, name string, pla
 }
 
 func (r *Planner) resolvePlan(ctx context.Context, dir string) (*Plan, error) {
-	plan, err := ReadFile(filepath.Join(dir, "plan.yaml"))
+	plan, err := ReadPlan(filepath.Join(dir, "plan.yaml"))
 	if err != nil {
 		return nil, err
 	}
@@ -229,7 +220,7 @@ func (r *Planner) resolveOnePlan(ctx context.Context, plan *Plan, dir string, al
 				return fmt.Errorf("failed to compile plan %q: %w", planName, err)
 			}
 
-			subplan, err := ReadFile(filepath.Join(dir, "plans", planName+".yaml"))
+			subplan, err := ReadPlan(filepath.Join(dir, "plans", planName+".yaml"))
 			if err != nil {
 				return err
 			}
@@ -269,6 +260,8 @@ func (r *Planner) executePlans(ctx context.Context, plan *Plan, stateDir string,
 	finalRes := &Result{}
 	for _, subplan := range all {
 		// fmt.Println("executeManifest", subplan.Name)
+		// TODO collect failures but run all plans, and report at the end
+		// (unless --fail-fast).
 		res, err := r.executePlan(octx, subplan, stateDir, opts)
 		if err != nil {
 			return finalRes, err
@@ -284,7 +277,7 @@ func (r *Planner) executePlans(ctx context.Context, plan *Plan, stateDir string,
 // executePlan runs a single plan
 func (r *Planner) executePlan(octx operator.Context, plan *Plan, stateDir string, opts ApplyOpts) (*PlanResult, error) {
 	if plan.Name != "plan" {
-		fmt.Println("woop", r.planDir, plan.Name)
+		// fmt.Println("woop", r.planDir, plan.Name)
 		octx = octx.WithSubplan(filepath.Join(r.planDir, "plans", plan.Name))
 	}
 	prevs, currs, err := r.readOpStates(octx, plan, stateDir, opts)
@@ -442,4 +435,32 @@ func annotatePlanScript(planb []byte) []byte {
 	copy(res, planDeclBoilerplate)
 	copy(res[len(planDeclBoilerplate):], planb)
 	return res
+}
+
+func addSelfPathToEnviron(environ []string) ([]string, error) {
+	// make sure we're using the current polyester binary for compilation
+	abs, err := filepath.Abs(os.Args[0])
+	if err != nil {
+		return nil, err
+	}
+	selfDir, _ := filepath.Split(abs)
+	selfDir = filepath.Clean(selfDir)
+	found := false
+	for i, env := range environ {
+		parts := strings.SplitN(env, "=", 2)
+		key := parts[0]
+		if key != "PATH" {
+			continue
+		}
+
+		environ[i] = selfDir + ":" + env
+		// fmt.Println("set $PATH=", environ[i])
+		found = true
+		break
+	}
+	if !found {
+		pathEnv := fmt.Sprintf("PATH=%s:/bin:/usr/bin:/usr/local/bin", selfDir)
+		environ = append(environ, pathEnv)
+	}
+	return environ, nil
 }

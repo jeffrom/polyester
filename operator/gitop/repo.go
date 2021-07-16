@@ -102,6 +102,9 @@ func (op Repo) GetState(octx operator.Context) (operator.State, error) {
 		},
 	})
 
+	// TODO rework this to handle commit/tag v branch ref
+	// TODO when the repo url changes, don't compare the prev state because it
+	// doesn't matter what the HEAD of the old remote is anymore
 	if opts.Ref == "" || opts.Ref == "HEAD" {
 		cmd := exec.CommandContext(octx.Context, "git", "fetch", "-v")
 		cmd.Dir = octx.FS.Join(opts.Dest)
