@@ -106,9 +106,10 @@ func (pd fsPlanDir) Resolve(kind string, pats []string) ([]string, error) {
 			}
 		}
 
-		parts := strings.SplitN(pat, string(filepath.Separator), 2)
-		if len(parts) == 2 {
-			cands = append([]string{filepath.Join(planDir, "plans", parts[0], kind, parts[1])}, cands...)
+		parts := strings.SplitN(pat, string(filepath.Separator), 3)
+		if len(parts) == 3 && parts[0] == "plans" {
+			cands = []string{filepath.Join(planDir, "plans", parts[1], kind, parts[2])}
+			// fmt.Println("ASDF", filepath.Join(planDir, "plans", parts[1], kind, parts[2]))
 		}
 
 		found := false

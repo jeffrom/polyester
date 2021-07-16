@@ -10,4 +10,4 @@ polyester mkdir $testdir/f
 polyester pcopy a $testdir/a
 polyester pcopy a d $testdir/f
 polyester pcopy "{b,c}" $testdir/
-polyester pcopy "cool/h" $testdir/h
+polyester pcopy "plans/cool/h" $testdir/h

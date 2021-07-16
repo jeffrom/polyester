@@ -60,6 +60,7 @@ func (op Pcopy) GetState(octx operator.Context) (operator.State, error) {
 	if err != nil {
 		return st, err
 	}
+	// st.WriteTo(os.Stdout)
 	return st, nil
 }
 
