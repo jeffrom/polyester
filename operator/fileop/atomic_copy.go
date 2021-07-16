@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/jeffrom/polyester/operator"
+	"github.com/jeffrom/polyester/state"
 )
 
 type AtomicCopyOpts struct {
@@ -89,9 +90,9 @@ atomic copy is the same in this case.
 	}
 }
 
-func (op AtomicCopy) GetState(octx operator.Context) (operator.State, error) {
+func (op AtomicCopy) GetState(octx operator.Context) (state.State, error) {
 	opts := op.Args.(*AtomicCopyOpts)
-	st, err := getStateFileGlobs(octx.FS, operator.State{}, opts.Dest, opts.Sources, opts.ExcludeGlobs)
+	st, err := getStateFileGlobs(octx.FS, state.State{}, opts.Dest, opts.Sources, opts.ExcludeGlobs)
 	return st, err
 }
 

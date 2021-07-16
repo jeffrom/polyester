@@ -10,6 +10,7 @@ import (
 	"github.com/jeffrom/polyester/operator/planop"
 	"github.com/jeffrom/polyester/operator/shellop"
 	"github.com/jeffrom/polyester/operator/userop"
+	"github.com/jeffrom/polyester/state"
 )
 
 var (
@@ -66,7 +67,7 @@ type operation struct {
 }
 
 func (op operation) Info() operator.Info { return op.data }
-func (op operation) GetState(octx operator.Context) (operator.State, error) {
+func (op operation) GetState(octx operator.Context) (state.State, error) {
 	return op.op.GetState(octx)
 }
 func (op operation) Run(octx operator.Context) error {

@@ -10,6 +10,7 @@ import (
 
 	"github.com/jeffrom/polyester/operator"
 	"github.com/jeffrom/polyester/operator/opfs"
+	"github.com/jeffrom/polyester/state"
 )
 
 type TouchOpts struct {
@@ -44,16 +45,16 @@ mtime`,
 	}
 }
 
-func (op Touch) GetState(octx operator.Context) (operator.State, error) {
+func (op Touch) GetState(octx operator.Context) (state.State, error) {
 	opts := op.Args.(*TouchOpts)
-	st := operator.State{}
+	st := state.State{}
 	// fmt.Printf("touch: GetState opts: %+v\n", opts)
 	info, err := octx.FS.Stat(opts.Path)
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return st, err
 	}
 
-	st = st.Append(operator.StateEntry{
+	st = st.Append(state.Entry{
 		Name: opts.Path,
 		File: &opfs.StateFileEntry{
 			// File: f,

@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/jeffrom/polyester/operator"
+	"github.com/jeffrom/polyester/state"
 )
 
 type UseraddOpts struct {
@@ -58,15 +59,15 @@ func (op Useradd) Info() operator.Info {
 	}
 }
 
-func (op Useradd) GetState(octx operator.Context) (operator.State, error) {
+func (op Useradd) GetState(octx operator.Context) (state.State, error) {
 	opts := op.Args.(*UseraddOpts)
-	st := operator.State{}
+	st := state.State{}
 	// TODO would be nice be able to refer to state in Run
 	u, err := Lookup(opts.User)
 	if err != nil && !errors.Is(err, user.UnknownUserError(opts.User)) {
 		return st, err
 	}
-	st = st.Append(operator.StateEntry{
+	st = st.Append(state.Entry{
 		Name: "~" + opts.User,
 		KV:   u.ToMap(),
 	})

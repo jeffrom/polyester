@@ -17,6 +17,7 @@ import (
 
 	"github.com/jeffrom/polyester/operator"
 	"github.com/jeffrom/polyester/operator/opfs"
+	"github.com/jeffrom/polyester/state"
 )
 
 func Checksum(p string) ([]byte, error) {
@@ -34,7 +35,7 @@ func Checksum(p string) ([]byte, error) {
 	return sha.Sum(nil), nil
 }
 
-func getStateFileGlobs(ofs operator.FS, st operator.State, dest string, globs, excludes []string) (operator.State, error) {
+func getStateFileGlobs(ofs operator.FS, st state.State, dest string, globs, excludes []string) (state.State, error) {
 	allFiles, err := gatherFilesGlob(ofs, globs, excludes)
 	if err != nil {
 		return st, err
@@ -67,7 +68,7 @@ func getStateFileGlobs(ofs operator.FS, st operator.State, dest string, globs, e
 }
 
 // appendFiles appends files to the state, include full mode and checksum.
-func appendFiles(ofs operator.FS, st operator.State, source, target bool, files ...string) (operator.State, error) {
+func appendFiles(ofs operator.FS, st state.State, source, target bool, files ...string) (state.State, error) {
 	for _, file := range files {
 		info, err := ofs.Stat(file)
 		if err != nil && !errors.Is(err, os.ErrNotExist) {
@@ -84,7 +85,7 @@ func appendFiles(ofs operator.FS, st operator.State, source, target bool, files 
 		}
 
 		if source {
-			st = st.Append(operator.StateEntry{
+			st = st.Append(state.Entry{
 				Name: file,
 				File: &opfs.StateFileEntry{
 					Info:   info,
@@ -93,7 +94,7 @@ func appendFiles(ofs operator.FS, st operator.State, source, target bool, files 
 			})
 		}
 		if target {
-			st = st.Append(operator.StateEntry{
+			st = st.Append(state.Entry{
 				Name:   file,
 				Target: true,
 				File: &opfs.StateFileEntry{

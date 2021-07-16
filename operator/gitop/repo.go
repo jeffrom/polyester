@@ -15,6 +15,7 @@ import (
 	"github.com/jeffrom/polyester/operator"
 	"github.com/jeffrom/polyester/operator/fileop"
 	"github.com/jeffrom/polyester/operator/opfs"
+	"github.com/jeffrom/polyester/state"
 )
 
 type RepoOpts struct {
@@ -48,9 +49,9 @@ func (op Repo) Info() operator.Info {
 	}
 }
 
-func (op Repo) GetState(octx operator.Context) (operator.State, error) {
+func (op Repo) GetState(octx operator.Context) (state.State, error) {
 	opts := op.Args.(*RepoOpts)
-	st := operator.State{}
+	st := state.State{}
 	// fmt.Printf("git-repo: GetState opts: %+v\n", opts)
 
 	headPath := filepath.Join(opts.Dest, ".git", "HEAD")
@@ -63,7 +64,7 @@ func (op Repo) GetState(octx operator.Context) (operator.State, error) {
 		return st, err
 	}
 
-	st = st.Append(operator.StateEntry{
+	st = st.Append(state.Entry{
 		Name: headPath,
 		File: &opfs.StateFileEntry{
 			Info:   headInfo,
@@ -94,7 +95,7 @@ func (op Repo) GetState(octx operator.Context) (operator.State, error) {
 		return st, err
 	}
 
-	st = st.Append(operator.StateEntry{
+	st = st.Append(state.Entry{
 		Name: currRefPath,
 		File: &opfs.StateFileEntry{
 			Info:     currRefInfo,
@@ -129,7 +130,7 @@ func (op Repo) GetState(octx operator.Context) (operator.State, error) {
 		}
 
 		remoteHead := strings.TrimSpace(outb.String())
-		st = st.Append(operator.StateEntry{
+		st = st.Append(state.Entry{
 			Name: "remote",
 			KV:   map[string]string{"HEAD": remoteHead},
 		})

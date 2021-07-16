@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/jeffrom/polyester/operator"
+	"github.com/jeffrom/polyester/state"
 )
 
 type Result struct {
@@ -38,7 +38,7 @@ type OperationResult struct {
 	PrevEmpty bool `json:"prev_empty"`
 	Executed  bool `json:"executed"`
 
-	prevState operator.State
-	currState operator.State
-	nextState operator.State
+	prevState state.State
+	currState state.State
+	nextState state.State
 }

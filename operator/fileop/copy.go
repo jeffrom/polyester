@@ -4,6 +4,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/jeffrom/polyester/operator"
+	"github.com/jeffrom/polyester/state"
 )
 
 type CopyOpts struct {
@@ -43,9 +44,9 @@ To copy files out of the plan directory, use pcopy.
 	}
 }
 
-func (op Copy) GetState(octx operator.Context) (operator.State, error) {
+func (op Copy) GetState(octx operator.Context) (state.State, error) {
 	opts := op.Args.(*CopyOpts)
-	st, err := getStateFileGlobs(octx.FS, operator.State{}, opts.Dest, opts.Sources, opts.ExcludeGlobs)
+	st, err := getStateFileGlobs(octx.FS, state.State{}, opts.Dest, opts.Sources, opts.ExcludeGlobs)
 	return st, err
 }
 

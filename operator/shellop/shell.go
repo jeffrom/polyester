@@ -12,6 +12,7 @@ import (
 	"github.com/jeffrom/polyester/operator"
 	"github.com/jeffrom/polyester/operator/fileop"
 	"github.com/jeffrom/polyester/operator/opfs"
+	"github.com/jeffrom/polyester/state"
 )
 
 type ShellOpts struct {
@@ -51,9 +52,9 @@ func (op Shell) Info() operator.Info {
 	}
 }
 
-func (op Shell) GetState(octx operator.Context) (operator.State, error) {
+func (op Shell) GetState(octx operator.Context) (state.State, error) {
 	opts := op.Args.(*ShellOpts)
-	st := operator.State{}
+	st := state.State{}
 	for _, changeGlob := range opts.OnChanges {
 		files, err := octx.FS.Glob(changeGlob)
 		if err != nil {
@@ -81,7 +82,7 @@ func (op Shell) GetState(octx operator.Context) (operator.State, error) {
 				}
 			}
 
-			st = st.Append(operator.StateEntry{
+			st = st.Append(state.Entry{
 				Name: fp,
 				File: &opfs.StateFileEntry{
 					Info:   info,
@@ -120,7 +121,7 @@ func (op Shell) GetState(octx operator.Context) (operator.State, error) {
 				}
 			}
 
-			st = st.Append(operator.StateEntry{
+			st = st.Append(state.Entry{
 				Name: fp,
 				File: &opfs.StateFileEntry{
 					Info:   info,

@@ -1,4 +1,5 @@
-package operator
+// Package state manages polyester states.
+package state
 
 import (
 	"bufio"
@@ -11,8 +12,10 @@ import (
 )
 
 type State struct {
-	Entries []StateEntry `json:"entries"`
+	Entries []Entry `json:"entries"`
 }
+
+func New() State { return State{} }
 
 // func NewStateFromPath(p string) (State, error) {
 // }
@@ -39,13 +42,13 @@ func (s State) WriteTo(w io.Writer) (int64, error) {
 	return int64(bw.Size()), bw.Flush()
 }
 
-func (s State) Append(next ...StateEntry) State {
+func (s State) Append(next ...Entry) State {
 	entries := append(s.Entries, next...)
 	return State{Entries: entries}
 }
 
 func (s State) Source() State {
-	var ents []StateEntry
+	var ents []Entry
 	for _, ent := range s.Entries {
 		if ent.Target {
 			continue
@@ -56,7 +59,7 @@ func (s State) Source() State {
 }
 
 func (s State) Target() State {
-	var ents []StateEntry
+	var ents []Entry
 	for _, ent := range s.Entries {
 		if !ent.Target {
 			continue
@@ -109,14 +112,14 @@ func (s State) Changed(other State) bool {
 	return false
 }
 
-type StateEntry struct {
+type Entry struct {
 	Name   string               `json:"name"`
 	File   *opfs.StateFileEntry `json:"file,omitempty"`
 	KV     map[string]string    `json:"kv,omitempty"`
 	Target bool                 `json:"target,omitempty"`
 }
 
-type stateEntries []StateEntry
+type stateEntries []Entry
 
 func (se stateEntries) Len() int {
 	return len(se)

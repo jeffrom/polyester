@@ -10,10 +10,11 @@ import (
 	"regexp"
 
 	"github.com/jeffrom/polyester/operator"
+	"github.com/jeffrom/polyester/state"
 )
 
-func readPrevState(data *operator.InfoData, stateDir string) (operator.State, error) {
-	st := operator.State{}
+func readPrevState(data *operator.InfoData, stateDir string) (state.State, error) {
+	st := state.State{}
 	key, err := opCacheKey(data)
 	if err != nil {
 		return st, err
@@ -34,7 +35,7 @@ func readPrevState(data *operator.InfoData, stateDir string) (operator.State, er
 	return st, nil
 }
 
-func saveState(data *operator.InfoData, st operator.State, stateDir string) error {
+func saveState(data *operator.InfoData, st state.State, stateDir string) error {
 	key, err := opCacheKey(data)
 	if err != nil {
 		return err

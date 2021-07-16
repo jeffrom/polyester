@@ -16,6 +16,7 @@ import (
 	"github.com/jeffrom/polyester/operator"
 	"github.com/jeffrom/polyester/operator/opfs"
 	"github.com/jeffrom/polyester/operator/planop"
+	"github.com/jeffrom/polyester/state"
 )
 
 type ApplyOpts struct {
@@ -308,9 +309,9 @@ func (r *Planner) executePlan(octx operator.Context, plan *Plan, stateDir string
 	return finalRes, nil
 }
 
-func (r *Planner) readOpStates(octx operator.Context, plan *Plan, stateDir string, opts ApplyOpts) ([]operator.State, []operator.State, error) {
-	var prevs []operator.State
-	var currs []operator.State
+func (r *Planner) readOpStates(octx operator.Context, plan *Plan, stateDir string, opts ApplyOpts) ([]state.State, []state.State, error) {
+	var prevs []state.State
+	var currs []state.State
 	for _, op := range plan.Operations {
 		prev, curr, err := r.readOpState(octx, op, stateDir, opts)
 		if err != nil {
@@ -322,19 +323,19 @@ func (r *Planner) readOpStates(octx operator.Context, plan *Plan, stateDir strin
 	return prevs, currs, nil
 }
 
-func (r *Planner) readOpState(octx operator.Context, op operator.Interface, stateDir string, opts ApplyOpts) (operator.State, operator.State, error) {
+func (r *Planner) readOpState(octx operator.Context, op operator.Interface, stateDir string, opts ApplyOpts) (state.State, state.State, error) {
 	info := op.Info()
 	name := info.Name()
 
 	// skip planops because planner handles running them outside this context
 	if name == "plan" || name == "dependency" {
-		return operator.State{}, operator.State{}, nil
+		return state.State{}, state.State{}, nil
 	}
 
 	data := info.Data()
 	prevst, err := readPrevState(data, stateDir)
 	if err != nil {
-		return prevst, operator.State{}, err
+		return prevst, state.State{}, err
 	}
 	st, err := op.GetState(octx)
 	if err != nil {
@@ -343,7 +344,7 @@ func (r *Planner) readOpState(octx operator.Context, op operator.Interface, stat
 	return prevst, st, nil
 }
 
-func (r *Planner) executeOperation(octx operator.Context, op operator.Interface, stateDir string, opts ApplyOpts, dirty bool, prevst, st operator.State) (*OperationResult, error) {
+func (r *Planner) executeOperation(octx operator.Context, op operator.Interface, stateDir string, opts ApplyOpts, dirty bool, prevst, st state.State) (*OperationResult, error) {
 	prevDirty := dirty
 	info := op.Info()
 	name := info.Name()

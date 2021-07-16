@@ -18,6 +18,7 @@ import (
 
 	"github.com/jeffrom/polyester/operator"
 	"github.com/jeffrom/polyester/operator/planop"
+	"github.com/jeffrom/polyester/state"
 )
 
 type Plan struct {
@@ -239,7 +240,7 @@ func sortPlans(plans []*Plan) ([]*Plan, error) {
 	return resolved, nil
 }
 
-func (p Plan) TextSummary(w io.Writer, prevs, currs []operator.State) error {
+func (p Plan) TextSummary(w io.Writer, prevs, currs []state.State) error {
 	bw := bufio.NewWriter(w)
 	name := p.Name
 	if name == "plan" {

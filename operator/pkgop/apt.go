@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/jeffrom/polyester/operator"
+	"github.com/jeffrom/polyester/state"
 )
 
 type AptInstallOpts struct {
@@ -42,9 +43,9 @@ func (op AptInstall) Info() operator.Info {
 	}
 }
 
-func (op AptInstall) GetState(octx operator.Context) (operator.State, error) {
+func (op AptInstall) GetState(octx operator.Context) (state.State, error) {
 	opts := op.Args.(*AptInstallOpts)
-	st := operator.State{}
+	st := state.State{}
 	args := append([]string{"-f", "${binary:Package}@${Version}\n", "-W"}, opts.Packages...)
 	cmd := exec.CommandContext(octx.Context, "dpkg-query", args...)
 	outb := &bytes.Buffer{}
@@ -69,7 +70,7 @@ func (op AptInstall) GetState(octx operator.Context) (operator.State, error) {
 	if err := sc.Err(); err != nil {
 		return st, err
 	}
-	st = st.Append(operator.StateEntry{
+	st = st.Append(state.Entry{
 		Name: "installed",
 		KV:   installed,
 	})
@@ -84,7 +85,7 @@ func (op AptInstall) GetState(octx operator.Context) (operator.State, error) {
 		}
 		requested[name] = version
 	}
-	st = st.Append(operator.StateEntry{
+	st = st.Append(state.Entry{
 		Name: "requested",
 		KV:   requested,
 	})

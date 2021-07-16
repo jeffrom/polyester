@@ -1,10 +1,14 @@
 package operator
 
-import "github.com/spf13/cobra"
+import (
+	"github.com/spf13/cobra"
+
+	"github.com/jeffrom/polyester/state"
+)
 
 type Noop struct{}
 
-var noopState = State{Entries: []StateEntry{
+var noopState = state.State{Entries: []state.Entry{
 	{
 		Name: "noop",
 		KV:   map[string]string{"noop": "ok"},
@@ -28,7 +32,7 @@ states.`,
 	}
 }
 
-func (op Noop) GetState(octx Context) (State, error) {
+func (op Noop) GetState(octx Context) (state.State, error) {
 	return noopState, nil
 }
 

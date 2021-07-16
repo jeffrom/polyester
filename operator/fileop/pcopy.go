@@ -4,6 +4,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/jeffrom/polyester/operator"
+	"github.com/jeffrom/polyester/state"
 )
 
 type PcopyOpts struct {
@@ -41,11 +42,11 @@ Copy files, resolving paths from the plan directory.
 	}
 }
 
-func (op Pcopy) GetState(octx operator.Context) (operator.State, error) {
+func (op Pcopy) GetState(octx operator.Context) (state.State, error) {
 	opts := op.Args.(*PcopyOpts)
 	// TODO ResolvePlanFile to get source (plan files) state, get dest state as
 	// normal
-	st := operator.State{}
+	st := state.State{}
 	sources, err := octx.PlanDir.Resolve("files", opts.Sources)
 	if err != nil {
 		return st, err
@@ -56,7 +57,7 @@ func (op Pcopy) GetState(octx operator.Context) (operator.State, error) {
 		return st, err
 	}
 
-	st, err = getStateFileGlobs(octx.FS, operator.State{}, opts.Dest, sources, opts.ExcludeGlobs)
+	st, err = getStateFileGlobs(octx.FS, state.State{}, opts.Dest, sources, opts.ExcludeGlobs)
 	if err != nil {
 		return st, err
 	}

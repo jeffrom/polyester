@@ -4,6 +4,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/jeffrom/polyester/operator"
+	"github.com/jeffrom/polyester/state"
 )
 
 type PlanOpts struct {
@@ -35,8 +36,8 @@ func (op Plan) Info() operator.Info {
 	}
 }
 
-func (op Plan) GetState(octx operator.Context) (operator.State, error) {
-	st := operator.State{}
+func (op Plan) GetState(octx operator.Context) (state.State, error) {
+	st := state.State{}
 	return st, nil
 }
 

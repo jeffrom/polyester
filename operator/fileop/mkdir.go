@@ -5,9 +5,11 @@ import (
 	"io/fs"
 	"os"
 
+	"github.com/spf13/cobra"
+
 	"github.com/jeffrom/polyester/operator"
 	"github.com/jeffrom/polyester/operator/opfs"
-	"github.com/spf13/cobra"
+	"github.com/jeffrom/polyester/state"
 )
 
 type MkdirOpts struct {
@@ -46,16 +48,16 @@ created (like mkdir -p).`,
 	}
 }
 
-func (op Mkdir) GetState(octx operator.Context) (operator.State, error) {
+func (op Mkdir) GetState(octx operator.Context) (state.State, error) {
 	opts := op.Args.(*MkdirOpts)
-	st := operator.State{}
+	st := state.State{}
 	for _, dest := range opts.Dests {
 		info, err := octx.FS.Stat(dest)
 		if err != nil && !errors.Is(err, os.ErrNotExist) {
 			return st, err
 		}
 		// fmt.Printf("info %s: %+v\n", dest, info.IsDir())
-		st = st.Append(operator.StateEntry{
+		st = st.Append(state.Entry{
 			Name: dest,
 			File: &opfs.StateFileEntry{
 				Info: info,

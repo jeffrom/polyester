@@ -2,9 +2,11 @@
 // which gather state and make changes to an environment.
 package operator
 
+import "github.com/jeffrom/polyester/state"
+
 type Interface interface {
 	Info() Info
-	GetState(octx Context) (State, error)
+	GetState(octx Context) (state.State, error)
 	Run(octx Context) error
 }
 
@@ -25,5 +27,5 @@ type Validater interface {
 // matches the current state, plan application will continue as if the operator
 // was executed.
 type DesiredStater interface {
-	DesiredState(octx Context) (State, error)
+	DesiredState(octx Context) (state.State, error)
 }
