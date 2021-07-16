@@ -109,7 +109,7 @@ func (pd fsPlanDir) Resolve(kind string, pats []string) ([]string, error) {
 
 		parts := strings.SplitN(pat, string(filepath.Separator), 3)
 		if len(parts) == 3 && parts[0] == "plans" {
-			return nil, errors.New("plandir: disallowed relative access to outside plans")
+			return nil, errors.New("plandir: disallowed relative access to outside plan")
 			// cands = []string{filepath.Join(planDir, "plans", parts[1], kind, parts[2])}
 		}
 
