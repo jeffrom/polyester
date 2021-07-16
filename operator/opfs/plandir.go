@@ -29,7 +29,11 @@ func NewPlanDirFS(dir string) fsPlanDir {
 	}
 }
 
-func (pd fsPlanDir) Open(name string) (fs.File, error) { return pd.dirFS.Open(name) }
+func (pd fsPlanDir) Open(name string) (fs.File, error) {
+	name = strings.TrimPrefix(name, pd.dir+"/")
+	p := filepath.Join(pd.dir, name)
+	return pd.dirFS.Open(p)
+}
 
 func (pd fsPlanDir) Stat(name string) (fs.FileInfo, error) {
 	name = strings.TrimPrefix(name, pd.dir+"/")
