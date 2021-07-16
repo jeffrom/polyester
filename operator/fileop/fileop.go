@@ -10,9 +10,10 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/otiai10/copy"
+
 	"github.com/jeffrom/polyester/operator"
 	"github.com/jeffrom/polyester/operator/opfs"
-	"github.com/otiai10/copy"
 )
 
 func Checksum(p string) ([]byte, error) {
@@ -193,13 +194,21 @@ func copyOneOrManyFiles(ofs operator.FS, destFile string, sources []string) erro
 
 func copyOneFile(ofs operator.FS, file, destFile string) error {
 	// fmt.Println("copyOneFile", file, destFile)
-	info, err := ofs.Stat(file)
+	srcInfo, err := ofs.Stat(file)
 	if err != nil {
 		return err
 	}
+	destInfo, err := ofs.Stat(destFile)
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return err
+	}
+	if destInfo != nil && srcInfo.IsDir() != destInfo.IsDir() {
+		return fmt.Errorf("source (%s) and dest (%s) are different types", file, destFile)
+	}
+
 	src := file
 	dest := destFile
-	if info.IsDir() {
+	if srcInfo.IsDir() {
 		if err := copy.Copy(src, dest); err != nil {
 			return err
 		}

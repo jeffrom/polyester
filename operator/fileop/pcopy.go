@@ -43,19 +43,35 @@ Copy files, resolving paths from the plan directory.
 
 func (op Pcopy) GetState(octx operator.Context) (operator.State, error) {
 	opts := op.Args.(*PcopyOpts)
-	st, err := getStateFileGlobs(octx.FS, operator.State{}, opts.Dest, opts.Sources, opts.ExcludeGlobs)
-	// TODO get plandir state as well
-	return st, err
+	// TODO ResolvePlanFile to get source (plan files) state, get dest state as
+	// normal
+	st := operator.State{}
+	sources, err := octx.PlanDir.Resolve("files", opts.Sources)
+	if err != nil {
+		return st, err
+	}
+	// fmt.Println("source files:", sources)
+	st, err = appendFiles(octx.PlanDir, st, true, false, sources...)
+	if err != nil {
+		return st, err
+	}
+
+	st, err = getStateFileGlobs(octx.FS, operator.State{}, opts.Dest, sources, opts.ExcludeGlobs)
+	if err != nil {
+		return st, err
+	}
+	return st, nil
 }
 
 func (op Pcopy) Run(octx operator.Context) error {
 	opts := op.Args.(*PcopyOpts)
-	allFiles, err := gatherFilesGlobDirOnly(octx.PlanDir, opts.Sources, opts.ExcludeGlobs)
+	sources, err := octx.PlanDir.Resolve("files", opts.Sources)
 	if err != nil {
 		return err
 	}
-	joinedFiles := make([]string, len(allFiles))
-	for i, file := range allFiles {
+
+	joinedFiles := make([]string, len(sources))
+	for i, file := range sources {
 		joinedFiles[i] = octx.PlanDir.Join(file)
 	}
 	return copyOneOrManyFiles(octx.PlanDir, octx.FS.Join(opts.Dest), joinedFiles)

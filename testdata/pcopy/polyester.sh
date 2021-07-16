@@ -1,11 +1,13 @@
 #!/bin/sh
 set -eu
 
+P plan cool
 
 testdir=/tmp/test/pcopy
 
 polyester mkdir $testdir/f
 
-polyester pcopy files/a $testdir/a
-polyester pcopy files/a files/d $testdir/f
-polyester pcopy "files/{b,c}" $testdir/
+polyester pcopy a $testdir/a
+polyester pcopy a d $testdir/f
+polyester pcopy "{b,c}" $testdir/
+# polyester pcopy "cool/h" $testdir/h

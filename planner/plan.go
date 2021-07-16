@@ -73,7 +73,10 @@ func ReadFile(p string) (*Plan, error) {
 	if op != nil {
 		ops = append(ops, op)
 	}
-	return &Plan{Name: planName, Operations: ops}, nil
+	return &Plan{
+		Name:       planName,
+		Operations: ops,
+	}, nil
 }
 
 // All returns all plans, sorted with dependencies resolved.

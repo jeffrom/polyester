@@ -26,14 +26,20 @@ func New(root string) FS {
 func (fs FS) Open(name string) (fs.File, error) { return fs.dirFS.Open(name) }
 
 func (fs FS) cleanPath(name string) string {
-	p := strings.TrimPrefix(name, fs.root+"/")
-	if name != fs.root {
+	if strings.HasPrefix(name, fs.root) {
+		return name
+	}
+	// fmt.Println("before", name)
+	p := strings.TrimPrefix(name, fs.root)
+	if name != fs.root && !strings.HasPrefix(name, fs.root) {
 		p = filepath.Join(fs.root, name)
 	}
+	// fmt.Println("cleaned", p)
 	return p
 }
 
 func (fs FS) Stat(name string) (fs.FileInfo, error) {
+	// fmt.Println("Stat", name)
 	return os.Stat(fs.cleanPath(name))
 }
 

@@ -41,6 +41,15 @@ func (c Context) Value(key interface{}) interface{} {
 	return c.Context.Value(key)
 }
 
+func (c Context) WithSubplan(spdir string) Context {
+	return Context{
+		Context: c.Context,
+		Opts:    c.Opts,
+		FS:      c.FS,
+		PlanDir: c.PlanDir.WithSubplan(spdir),
+	}
+}
+
 func (c Context) WithGotState(gotState bool) Context {
 	ctx := context.WithValue(c.Context, gotStateKey, gotState)
 	return Context{

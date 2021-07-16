@@ -283,6 +283,10 @@ func (r *Planner) executePlans(ctx context.Context, plan *Plan, stateDir string,
 
 // executePlan runs a single plan
 func (r *Planner) executePlan(octx operator.Context, plan *Plan, stateDir string, opts ApplyOpts) (*PlanResult, error) {
+	if plan.Name != "plan" {
+		fmt.Println("woop", r.planDir, plan.Name)
+		octx = octx.WithSubplan(filepath.Join(r.planDir, "plans", plan.Name))
+	}
 	prevs, currs, err := r.readOpStates(octx, plan, stateDir, opts)
 	if err != nil {
 		return nil, err
