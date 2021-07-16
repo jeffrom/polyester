@@ -98,11 +98,17 @@ func (pd fsPlanDir) Resolve(kind string, pats []string) ([]string, error) {
 		cands := []string{
 			filepath.Join(planDir, kind, pat),
 		}
+
 		if spDir != "" {
 			cands = []string{
 				filepath.Join(spDir, kind, pat),
 				filepath.Join(planDir, kind, pat),
 			}
+		}
+
+		parts := strings.SplitN(pat, string(filepath.Separator), 2)
+		if len(parts) == 2 {
+			cands = append([]string{filepath.Join(planDir, "plans", parts[0], kind, parts[1])}, cands...)
 		}
 
 		found := false
