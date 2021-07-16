@@ -1,6 +1,7 @@
 package opfs
 
 import (
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
@@ -108,8 +109,8 @@ func (pd fsPlanDir) Resolve(kind string, pats []string) ([]string, error) {
 
 		parts := strings.SplitN(pat, string(filepath.Separator), 3)
 		if len(parts) == 3 && parts[0] == "plans" {
-			cands = []string{filepath.Join(planDir, "plans", parts[1], kind, parts[2])}
-			// fmt.Println("ASDF", filepath.Join(planDir, "plans", parts[1], kind, parts[2]))
+			return nil, errors.New("plandir: disallowed relative access to outside plans")
+			// cands = []string{filepath.Join(planDir, "plans", parts[1], kind, parts[2])}
 		}
 
 		found := false
