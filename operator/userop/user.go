@@ -27,11 +27,11 @@ func Lookup(username string) (*User, error) {
 	}, err
 }
 
-func (u *User) ToMap() map[string]string {
+func (u *User) ToMap() map[string]interface{} {
 	if u == nil {
 		return nil
 	}
-	return map[string]string{
+	return map[string]interface{}{
 		"uid":      u.Uid,
 		"gid":      u.Gid,
 		"username": u.Username,

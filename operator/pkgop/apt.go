@@ -60,7 +60,7 @@ func (op AptInstall) GetState(octx operator.Context) (state.State, error) {
 	}
 
 	sc := bufio.NewScanner(outb)
-	installed := make(map[string]string)
+	installed := make(map[string]interface{})
 	for sc.Scan() {
 		line := sc.Text()
 		parts := strings.SplitN(line, "@", 2)
@@ -75,7 +75,7 @@ func (op AptInstall) GetState(octx operator.Context) (state.State, error) {
 		KV:   installed,
 	})
 
-	requested := make(map[string]string)
+	requested := make(map[string]interface{})
 	for _, arg := range opts.Packages {
 		parts := strings.SplitN(arg, "@", 2)
 		var version string

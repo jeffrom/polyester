@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"io"
 	"os"
-	"sort"
+	"reflect"
 
 	"github.com/jeffrom/polyester/operator/opfs"
 )
@@ -98,33 +98,13 @@ func (s State) Changed(other State) bool {
 		// fmt.Println("changed bc diff size")
 		return true
 	}
-	sort.Sort(stateEntries(ents))
-	sort.Sort(stateEntries(oents))
+	// sort.Sort(stateEntries(ents))
+	// sort.Sort(stateEntries(oents))
 
 	for i, ent := range ents {
 		oent := oents[i]
-		if ent.Name != oent.Name {
-			// fmt.Println("changed bc diff name")
+		if ent.Changed(oent) {
 			return true
-		}
-
-		if (ent.File == nil) != (oent.File == nil) {
-			// fmt.Println("changed bc diff file nil-ness")
-			return true
-		}
-		if ent.File != nil {
-			sf, of := ent.File, oent.File
-			if (sf.Info == nil) != (of.Info == nil) {
-				// fmt.Println("changed bc diff file info nil-ness")
-				return true
-			}
-			if sf.Info != nil &&
-				sf.Info.IsDir() != of.Info.IsDir() ||
-				sf.Info.Mode() != of.Info.Mode() ||
-				!sf.Info.ModTime().Equal(of.Info.ModTime()) {
-				// fmt.Println(sf.Info.Name(), "changed bc diff file info", sf.Info.IsDir(), of.Info.IsDir())
-				return true
-			}
 		}
 	}
 
@@ -132,10 +112,59 @@ func (s State) Changed(other State) bool {
 }
 
 type Entry struct {
-	Name   string               `json:"name"`
-	File   *opfs.StateFileEntry `json:"file,omitempty"`
-	KV     map[string]string    `json:"kv,omitempty"`
-	Target bool                 `json:"target,omitempty"`
+	Name   string                 `json:"name"`
+	File   *opfs.StateFileEntry   `json:"file,omitempty"`
+	KV     map[string]interface{} `json:"kv,omitempty"`
+	Target bool                   `json:"target,omitempty"`
+}
+
+func (e Entry) Changed(oe Entry) bool {
+	if e.Name != oe.Name {
+		// fmt.Println("changed bc diff name")
+		return true
+	}
+
+	if (e.File == nil) != (oe.File == nil) {
+		// fmt.Println("changed bc diff file nil-ness")
+		return true
+	}
+	if e.File != nil {
+		sf, of := e.File, oe.File
+		if (sf.Info == nil) != (of.Info == nil) {
+			// fmt.Println("changed bc diff file info nil-ness")
+			return true
+		}
+		if sf.Info != nil &&
+			sf.Info.IsDir() != of.Info.IsDir() ||
+			sf.Info.Mode() != of.Info.Mode() ||
+			!sf.Info.ModTime().Equal(of.Info.ModTime()) {
+			// fmt.Println(sf.Info.Name(), "changed bc diff file info", sf.Info.IsDir(), of.Info.IsDir())
+			return true
+		}
+	}
+
+	if (e.KV == nil) != (oe.KV == nil) {
+		return true
+	}
+	if e.KV != nil {
+		kv, okv := e.KV, oe.KV
+		if len(kv) != len(okv) {
+			return true
+		}
+		for k, v := range kv {
+			ov := okv[k]
+			if !reflect.DeepEqual(v, ov) {
+				return true
+			}
+		}
+
+		for k := range okv {
+			if _, ok := kv[k]; !ok {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 type stateEntries []Entry

@@ -132,7 +132,7 @@ func (op Repo) GetState(octx operator.Context) (state.State, error) {
 		remoteHead := strings.TrimSpace(outb.String())
 		st = st.Append(state.Entry{
 			Name: "remote",
-			KV:   map[string]string{"HEAD": remoteHead},
+			KV:   map[string]interface{}{"HEAD": remoteHead},
 		})
 	}
 	return st, nil

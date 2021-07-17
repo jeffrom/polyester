@@ -11,7 +11,7 @@ type Noop struct{}
 var noopState = state.State{Entries: []state.Entry{
 	{
 		Name: "noop",
-		KV:   map[string]string{"noop": "ok"},
+		KV:   map[string]interface{}{"noop": "ok"},
 	},
 }}
 
