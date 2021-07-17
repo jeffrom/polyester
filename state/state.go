@@ -3,6 +3,7 @@ package state
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"io"
 	"os"
@@ -17,8 +18,26 @@ type State struct {
 
 func New() State { return State{} }
 
-// func NewStateFromPath(p string) (State, error) {
-// }
+func FromReader(r io.Reader) (State, error) {
+	st := New()
+	if err := json.NewDecoder(r).Decode(&st); err != nil {
+		return st, err
+	}
+	return st, nil
+}
+
+func FromPath(p string) (State, error) {
+	f, err := os.Open(p)
+	if err != nil {
+		return State{}, err
+	}
+	defer f.Close()
+	return FromReader(bufio.NewReader(f))
+}
+
+func FromBytes(b []byte) (State, error) {
+	return FromReader(bytes.NewReader(b))
+}
 
 func (s State) WriteFile(p string) error {
 	f, err := os.Create(p)
