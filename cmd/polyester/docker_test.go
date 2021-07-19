@@ -31,6 +31,7 @@ func TestDocker(t *testing.T) {
 	runDockerTest(t, "copy", "Copy")
 	runDockerTest(t, "pcopy", "Pcopy")
 	runDockerTest(t, "atomic-copy", "AtomicCopy")
+	runDockerTest(t, "template", "Template")
 }
 
 func TestNoop(t *testing.T) {
@@ -100,6 +101,16 @@ func TestPcopy(t *testing.T) {
 func TestAtomicCopy(t *testing.T) {
 	checkTestFilter(t, "atomic-copy")
 	planPath := Path(filepath.Join("testdata", "atomic-copy"))
+	for i := 0; i < 3; i++ {
+		if err := run([]string{"polyester", "apply", planPath}); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+func TestTemplate(t *testing.T) {
+	checkTestFilter(t, "template")
+	planPath := Path(filepath.Join("testdata", "template"))
 	for i := 0; i < 3; i++ {
 		if err := run([]string{"polyester", "apply", planPath}); err != nil {
 			t.Fatal(err)
