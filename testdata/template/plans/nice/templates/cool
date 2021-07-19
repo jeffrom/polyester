@@ -4,3 +4,4 @@ cool: {{ .Data.myvars.cool }}
 woah: {{ .Data.extra.woah }}
 {{- end }}
 secret: {{ string .Secrets.wow -}}
+another secret: {{ string (secret .Secrets "with.ext") }}

@@ -5,16 +5,17 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/Masterminds/sprig"
+	"github.com/Masterminds/sprig/v3"
 )
 
 func tmplHelpers() template.FuncMap {
 	fns := template.FuncMap{
 		// "sopsDecrypt": sopsDecrypt,
 		"string": toString,
+		"secret": secret,
 	}
 
-	spfns := sprig.HermeticTxtFuncMap()
+	spfns := sprig.TxtFuncMap()
 	for k, fn := range spfns {
 		fns[k] = fn
 	}
@@ -37,4 +38,8 @@ func toString(i interface{}) string {
 	default:
 		panic(fmt.Sprintf("templates: string conversion for %T not supported", i))
 	}
+}
+
+func secret(secrets map[string][]uint8, key string) []uint8 {
+	return secrets[key]
 }

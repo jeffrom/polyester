@@ -28,6 +28,7 @@ func New(p string) *Templates {
 
 func (t *Templates) Load() error {
 	fns := tmplHelpers()
+	// fmt.Println(fns)
 	tmpl := template.Must(template.New("plan").Funcs(fns).Parse(""))
 
 	var tmplPaths []string
