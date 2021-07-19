@@ -113,7 +113,7 @@ func (op Template) DesiredState(octx operator.Context) (state.State, error) {
 	if err != nil {
 		return st, err
 	}
-	fmt.Printf("template: DesiredState opts: %+v\ndata:%+v\nsecrets: %+v\n", opts, userData, secretData)
+	// fmt.Printf("template: DesiredState opts: %+v\ndata:%+v\nsecrets: %+v\n", opts, userData, secretData)
 
 	for i, dest := range opts.Dests {
 		b, err := executeTemplate(octx, opts.Path, dest, i, userData, secretData)
@@ -125,7 +125,7 @@ func (op Template) DesiredState(octx operator.Context) (state.State, error) {
 		if err != nil {
 			return st, err
 		}
-		fmt.Printf("checksum %x, rendered:\n%s\n", checksum, string(b))
+		// fmt.Printf("checksum %x, rendered:\n%s\n", checksum, string(b))
 
 		st = st.Append(state.Entry{
 			Name: dest,
@@ -161,6 +161,9 @@ func (op Template) Run(octx operator.Context) error {
 			return err
 		}
 
+		if fi, err := os.Stat(octx.FS.Join(dest)); err == nil && fi.IsDir() {
+			return fmt.Errorf("template: dir destination not supported: %q", dest)
+		}
 		if err := os.WriteFile(octx.FS.Join(dest), b, 0644); err != nil {
 			return err
 		}
