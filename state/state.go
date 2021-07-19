@@ -167,6 +167,15 @@ func (e Entry) Changed(oe Entry) bool {
 	return false
 }
 
+func (e Entry) WithoutTimestamps() Entry {
+	return Entry{
+		Name:   e.Name,
+		File:   e.File.WithoutTimestamps(),
+		KV:     e.KV,
+		Target: e.Target,
+	}
+}
+
 type stateEntries []Entry
 
 func (se stateEntries) Len() int {

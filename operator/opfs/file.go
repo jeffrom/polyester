@@ -46,6 +46,24 @@ func (f *StateFileEntry) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+func (f *StateFileEntry) WithoutTimestamps() *StateFileEntry {
+	if f == nil {
+		return nil
+	}
+	fi := f.Info
+	return &StateFileEntry{
+		Info: StateFileInfo{
+			RawName:  fi.Name(),
+			RawMode:  uint32(fi.Mode()),
+			RawSize:  fi.Size(),
+			SHA256:   f.SHA256,
+			Contents: f.Contents,
+		},
+		SHA256:   f.SHA256,
+		Contents: f.Contents,
+	}
+}
+
 type StateFileInfo struct {
 	RawName    string    `json:"name"`
 	RawModTime time.Time `json:"mtime,omitempty"`
