@@ -3,7 +3,6 @@
 package facts
 
 import (
-	"context"
 	"sync"
 
 	"github.com/zcalusic/sysinfo"
@@ -18,7 +17,7 @@ type Facts struct {
 	System sysinfo.SysInfo `json:"system"`
 }
 
-func Gather(ctx context.Context) (Facts, error) {
+func Gather() (Facts, error) {
 	siOnce.Do(si.GetSysInfo)
 	return Facts{System: si}, nil
 }

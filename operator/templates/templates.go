@@ -13,15 +13,6 @@ import (
 	"github.com/jeffrom/polyester/operator/facts"
 )
 
-// Data is the template data struct used in all template operators.
-type Data struct {
-	// Facts are information about the local system.
-	Facts facts.Facts
-
-	// Data is any data provided via vars/default.yaml or --data.
-	Data map[string]interface{}
-}
-
 // Templates is a collection of templates loaded from a plan directory, any of
 // which can be rendered and import others.
 type Templates struct {
@@ -81,6 +72,11 @@ func (t *Templates) ExecuteForOp(w io.Writer, name string, data Data) error {
 	if tmpl == nil {
 		return fmt.Errorf("templates: could not find %q", name)
 	}
+	facts, err := facts.Gather()
+	if err != nil {
+		return err
+	}
+	data.Facts = facts
 	return tmpl.Execute(w, data)
 }
 

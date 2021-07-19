@@ -3,6 +3,7 @@ package templateop
 import (
 	"bytes"
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
 
@@ -46,10 +47,31 @@ func (op Template) Info() operator.Info {
 func (op Template) GetState(octx operator.Context) (state.State, error) {
 	opts := op.Args.(*TemplateOpts)
 	st := state.State{}
-	fmt.Printf("template: GetState opts: %+v\n", opts)
+
+	dataPaths, err := octx.PlanDir.Resolve("vars", opts.DataPaths)
+	if err != nil {
+		return st, err
+	}
+	absDataPaths := make([]string, len(dataPaths))
+	for i, dataPath := range dataPaths {
+		absDataPaths[i] = octx.PlanDir.Join(dataPath)
+	}
+
+	defaultVarsPath := octx.PlanDir.Join("vars", "default.yaml")
+	if _, err := os.Stat(defaultVarsPath); err == nil {
+		absDataPaths = append([]string{defaultVarsPath}, absDataPaths...)
+	}
+	userData, err := octx.Templates.MergeData(absDataPaths)
+	if err != nil {
+		return st, err
+	}
+	fmt.Printf("template: GetState opts: %+v\ndata:%+v\n", opts, userData)
 
 	b := &bytes.Buffer{}
-	if err := octx.Templates.ExecuteForOp(b, opts.Path, templates.Data{}); err != nil {
+	data := templates.Data{
+		Data: userData,
+	}
+	if err := octx.Templates.ExecuteForOp(b, opts.Path, data); err != nil {
 		return st, err
 	}
 	fmt.Println("rendered:", b.String())
