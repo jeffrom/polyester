@@ -2,7 +2,7 @@ package templateop
 
 import (
 	"bytes"
-	"fmt"
+	"errors"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -50,9 +50,105 @@ func (op Template) GetState(octx operator.Context) (state.State, error) {
 	opts := op.Args.(*TemplateOpts)
 	st := state.State{}
 
+	for _, dest := range opts.Dests {
+		info, err := octx.FS.Stat(dest)
+		if err != nil && !errors.Is(err, os.ErrNotExist) {
+			return st, err
+		}
+
+		var checksum []byte
+		if info != nil && !info.IsDir() {
+			var err error
+			checksum, err = fileop.Checksum(octx.FS.Join(dest))
+			if err != nil {
+				return st, err
+			}
+		}
+		// fmt.Printf("%s: checksum %s\n", octx.FS.Join(dest), string(checksum))
+
+		var fi *opfs.StateFileEntry
+		if len(checksum) > 0 {
+			fi = &opfs.StateFileEntry{
+				SHA256: checksum,
+				Info: opfs.StateFileInfo{
+					RawName: info.Name(),
+					SHA256:  checksum,
+				},
+			}
+		}
+		st = st.Append(state.Entry{
+			Name: dest,
+			File: fi,
+		})
+	}
+	// st.WriteTo(os.Stdout)
+	// println()
+	return st, nil
+}
+
+func (op Template) DesiredState(octx operator.Context) (state.State, error) {
+	return state.New(), nil
+	// opts := op.Args.(*TemplateOpts)
+	// st := state.State{}
+
+	// userData, err := readUserData(octx, opts)
+	// if err != nil {
+	// 	return st, err
+	// }
+	// // fmt.Printf("template: GetState opts: %+v\ndata:%+v\n", opts, userData)
+
+	// for i, dest := range opts.Dests {
+	// 	b, err := executeTemplate(octx, opts.Path, dest, i, userData)
+	// 	if err != nil {
+	// 		return st, err
+	// 	}
+
+	// 	checksum, err := fileop.ChecksumReader(bytes.NewReader(b))
+	// 	if err != nil {
+	// 		return st, err
+	// 	}
+	// 	// fmt.Printf("checksum %s, rendered:\n%s\n", string(checksum), string(b))
+
+	// 	st = st.Append(state.Entry{
+	// 		Name: dest,
+	// 		File: &opfs.StateFileEntry{
+	// 			SHA256: checksum,
+	// 		},
+	// 	})
+	// }
+	// return st, nil
+}
+
+func (op Template) Run(octx operator.Context) error {
+	opts := op.Args.(*TemplateOpts)
+	userData, err := readUserData(octx, opts)
+	if err != nil {
+		return err
+	}
+	for i, dest := range opts.Dests {
+		b, err := executeTemplate(octx, opts.Path, dest, i, userData)
+		if err != nil {
+			return err
+		}
+
+		if err := os.WriteFile(octx.FS.Join(dest), b, 0644); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func templateArgs(cmd *cobra.Command, args []string, target interface{}) error {
+	t := target.(*TemplateOpts)
+	t.Path = args[0]
+	t.Dests = args[1:]
+	return nil
+}
+
+func readUserData(octx operator.Context, opts *TemplateOpts) (map[string]interface{}, error) {
 	dataPaths, err := octx.PlanDir.Resolve("vars", opts.DataPaths)
 	if err != nil {
-		return st, err
+		return nil, err
 	}
 	absDataPaths := make([]string, len(dataPaths))
 	for i, dataPath := range dataPaths {
@@ -65,46 +161,21 @@ func (op Template) GetState(octx operator.Context) (state.State, error) {
 	}
 	userData, err := octx.Templates.MergeData(absDataPaths)
 	if err != nil {
-		return st, err
+		return nil, err
 	}
-	fmt.Printf("template: GetState opts: %+v\ndata:%+v\n", opts, userData)
-
-	for i, dest := range opts.Dests {
-		buf := &bytes.Buffer{}
-		data := templates.Data{
-			Data:    userData,
-			Dest:    dest,
-			DestIdx: i,
-		}
-		if err := octx.Templates.ExecuteForOp(buf, opts.Path, data); err != nil {
-			return st, err
-		}
-		b := buf.Bytes()
-
-		checksum, err := fileop.ChecksumReader(bytes.NewReader(b))
-		if err != nil {
-			return st, err
-		}
-		// fmt.Printf("checksum %s, rendered:\n%s\n", string(checksum), string(b))
-
-		st = st.Append(state.Entry{
-			Name: dest,
-			File: &opfs.StateFileEntry{
-				SHA256: checksum,
-			},
-		})
-	}
-	return st, nil
+	return userData, nil
 }
 
-func (op Template) Run(octx operator.Context) error {
-	// opts := op.Args.(*TemplateOpts)
-	return nil
-}
-
-func templateArgs(cmd *cobra.Command, args []string, target interface{}) error {
-	t := target.(*TemplateOpts)
-	t.Path = args[0]
-	t.Dests = args[1:]
-	return nil
+func executeTemplate(octx operator.Context, p string, dest string, destIdx int, userData map[string]interface{}) ([]byte, error) {
+	buf := &bytes.Buffer{}
+	data := templates.Data{
+		Data:    userData,
+		Dest:    dest,
+		DestIdx: destIdx,
+	}
+	if err := octx.Templates.ExecuteForOp(buf, p, data); err != nil {
+		return nil, err
+	}
+	b := buf.Bytes()
+	return b, nil
 }

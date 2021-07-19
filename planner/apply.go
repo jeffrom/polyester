@@ -368,8 +368,17 @@ func (r *Planner) executeOperation(octx operator.Context, op operator.Interface,
 	prevSrcSt := prevst.Source()
 	srcSt := st.Source()
 
+	desiredSt := state.New()
+	if dop, ok := op.(operator.DesiredStater); ok {
+		var err error
+		desiredSt, err = dop.DesiredState(octx)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	prevEmpty := prevSrcSt.Empty()
-	changed, err := r.getOpChanged(octx, op, prevSrcSt, srcSt)
+	changed, err := r.getOpChanged(octx, op, prevSrcSt, srcSt, desiredSt)
 	if err != nil {
 		return nil, err
 	}
@@ -420,19 +429,15 @@ func (r *Planner) executeOperation(octx operator.Context, op operator.Interface,
 	return res, nil
 }
 
-func (r *Planner) getOpChanged(octx operator.Context, op operator.Interface, prevst, currst state.State) (bool, error) {
-	chgfn := func(a, b state.State) (bool, error) {
-		return a.Changed(b), nil
-	}
+func (r *Planner) getOpChanged(octx operator.Context, op operator.Interface, prevst, currst, desiredst state.State) (bool, error) {
+	var chgfn func(a, b state.State) (bool, error)
 	if cop, ok := op.(operator.ChangeDetector); ok {
 		chgfn = cop.Changed
+	} else {
+		chgfn = func(a, b state.State) (bool, error) { return a.Changed(b), nil }
 	}
 
-	if dop, ok := op.(operator.DesiredStater); ok {
-		desiredst, err := dop.DesiredState(octx)
-		if err != nil {
-			return false, err
-		}
+	if !desiredst.Empty() {
 		return chgfn(prevst, desiredst)
 	}
 	return chgfn(prevst, currst)
