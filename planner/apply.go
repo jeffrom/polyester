@@ -267,7 +267,7 @@ func (r *Planner) executePlans(ctx context.Context, plan *Plan, stateDir string,
 	octx := operator.NewContext(ctx, opfs.New(dirRoot), opfs.NewPlanDirFS(r.planDir), tmpl)
 	finalRes := &Result{}
 	for _, subplan := range all {
-		// fmt.Println("executeManifest", subplan.Name)
+		// fmt.Println("starting executePlan()", subplan.Name)
 		// TODO collect failures but run all plans, and report at the end
 		// (unless --fail-fast).
 		res, err := r.executePlan(octx, subplan, stateDir, opts)
@@ -285,8 +285,9 @@ func (r *Planner) executePlans(ctx context.Context, plan *Plan, stateDir string,
 // executePlan runs a single plan
 func (r *Planner) executePlan(octx operator.Context, plan *Plan, stateDir string, opts ApplyOpts) (*PlanResult, error) {
 	if plan.Name != "plan" {
-		// fmt.Println("woop", r.planDir, plan.Name)
+		// fmt.Println("setting subdir", plan.Name)
 		octx = octx.WithSubplan(filepath.Join(r.planDir, "plans", plan.Name))
+		// fmt.Println("executePlan plan dir:", octx.PlanDir.Join("/"))
 	}
 	prevs, currs, err := r.readOpStates(octx, plan, stateDir, opts)
 	if err != nil {
@@ -374,6 +375,7 @@ func (r *Planner) executeOperation(octx operator.Context, op operator.Interface,
 	if err != nil {
 		return nil, err
 	}
+	// fmt.Println("executeOperation plan dir:", octx.PlanDir.Join("/"))
 	if dop, ok := origOp.(operator.DesiredStater); ok {
 		var err error
 		desiredSt, err = dop.DesiredState(octx)

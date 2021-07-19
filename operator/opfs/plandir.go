@@ -18,6 +18,7 @@ type PlanDir interface {
 	fs.ReadFileFS
 	Join(paths ...string) string
 	WithSubplan(spdir string) PlanDir
+	Subplan() string
 	Resolve(kind string, pats []string) ([]string, error)
 }
 
@@ -35,6 +36,7 @@ func NewPlanDirFS(dir string) fsPlanDir {
 }
 
 func (pd fsPlanDir) WithSubplan(spdir string) PlanDir {
+	// fmt.Printf("WithSubplan: %q\n", spdir)
 	return fsPlanDir{
 		dir:   pd.dir,
 		dirFS: pd.dirFS,
@@ -78,7 +80,21 @@ func (pd fsPlanDir) Glob(pattern string) ([]string, error) {
 }
 
 func (pd fsPlanDir) Join(paths ...string) string {
-	return filepath.Join(append([]string{pd.dir}, paths...)...)
+	dir := pd.dir
+	// if pd.spdir != "" {
+	// 	dir = pd.spdir
+	// 	fmt.Println("uh oh", dir)
+	// }
+	return filepath.Join(append([]string{dir}, paths...)...)
+}
+
+func (pd fsPlanDir) Subplan() string {
+	if pd.spdir == "" {
+		return ""
+	}
+
+	dir := strings.TrimPrefix(pd.spdir, filepath.Join(pd.dir, "plans")+string(filepath.Separator))
+	return dir
 }
 
 // Resolve returns real path to files located in a files/ directory in the plan

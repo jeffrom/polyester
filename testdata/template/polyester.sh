@@ -5,6 +5,8 @@ testdir=/tmp/test/templates
 
 P mkdir $testdir
 
+P plan nice
+
 P template cool $testdir/cool
 P template cool $testdir/cool2
 P template \

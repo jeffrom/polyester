@@ -208,7 +208,7 @@ func readSecretData(octx operator.Context, ids []age.Identity, opts *TemplateOpt
 
 	res := make(map[string][]byte)
 	for _, secretPath := range secretPaths {
-		// fmt.Println("ASDFSADF", secretPath, convertSecretPath(secretPath))
+		// fmt.Println("ASDFSADF", secretPath, convertSecretPath(secretPath, octx.PlanDir.Subplan()))
 		f, err := octx.PlanDir.Open(secretPath)
 		if err != nil {
 			return nil, err
@@ -220,7 +220,7 @@ func readSecretData(octx operator.Context, ids []age.Identity, opts *TemplateOpt
 			return nil, err
 		}
 		f.Close()
-		res[convertSecretPath(secretPath)] = decrypted
+		res[convertSecretPath(secretPath, octx.PlanDir.Subplan())] = decrypted
 	}
 	return res, nil
 }
@@ -282,7 +282,12 @@ func executeTemplate(octx operator.Context, p string, dest string, destIdx int, 
 		Dest:    dest,
 		DestIdx: destIdx,
 	}
-	if err := octx.Templates.ExecuteForOp(buf, p, data); err != nil {
+	// fmt.Printf("template %s -> %s\n", p, dest)
+	resolved, err := resolveTemplatePath(octx, p)
+	if err != nil {
+		return nil, err
+	}
+	if err := octx.Templates.ExecuteForOp(buf, resolved, data); err != nil {
 		return nil, err
 	}
 	b := buf.Bytes()
@@ -306,7 +311,7 @@ func ageDecrypt(src io.Reader, identities ...age.Identity) ([]byte, error) {
 
 const sep = string(filepath.Separator)
 
-func convertSecretPath(p string) string {
+func convertSecretPath(p, spdir string) string {
 	if strings.HasPrefix(p, "secrets"+sep) {
 		p = strings.TrimPrefix(p, "secrets"+sep)
 	}
@@ -318,5 +323,16 @@ func convertSecretPath(p string) string {
 	default:
 		panic("template: secret file extension not supported: " + p)
 	}
+	if strings.HasPrefix(p, filepath.Join("plans", spdir)) {
+		return convertedFile
+	}
+	// fmt.Println("convertSecretPath", convertedFile, filepath.Join(dir, convertedFile))
 	return filepath.Join(dir, convertedFile)
+}
+
+func resolveTemplatePath(octx operator.Context, p string) (string, error) {
+	if sp := octx.PlanDir.Subplan(); sp != "" {
+		return filepath.Join(sp, p), nil
+	}
+	return p, nil
 }

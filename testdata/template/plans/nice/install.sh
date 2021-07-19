@@ -1,4 +1,8 @@
 #!/bin/sh
 set -ex
 
-P noop
+testdir=/tmp/test/templates
+
+P mkdir $testdir
+
+P template cool $testdir/nice-cool
