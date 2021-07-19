@@ -26,9 +26,12 @@ func Checksum(p string) ([]byte, error) {
 		return nil, err
 	}
 	defer f.Close()
+	return ChecksumReader(f)
+}
 
+func ChecksumReader(r io.Reader) ([]byte, error) {
 	sha := sha256.New()
-	if _, err := io.Copy(sha, f); err != nil {
+	if _, err := io.Copy(sha, r); err != nil {
 		return nil, err
 	}
 

@@ -15,6 +15,13 @@ type Data struct {
 
 	// Data is any data provided via vars/default.yaml or --data.
 	Data map[string]interface{}
+
+	// Dest is the path to the current destination file.
+	Dest string
+
+	// DestIdx is the index of the current destination file, according to the
+	// argument order.
+	DestIdx int
 }
 
 func (t *Templates) MergeData(dataPaths []string) (map[string]interface{}, error) {

@@ -10,13 +10,13 @@ type Interface interface {
 	Run(octx Context) error
 }
 
-// Validater can be implemented by operators to validate arguments before
+// Validator can be implemented by operators to validate arguments before
 // execution. If implemented, Validate can be run multiple times. If evaluated
 // is false, the arguments shell script variables are not expanded -- ie if the
 // argument in the shell script is "$mydir/myfile", that is what the command
 // target args will be on the operation. If true, the arguments shell operators
 // are expanded.
-type Validater interface {
+type Validator interface {
 	Validate(octx Context, targ interface{}, evaluated bool) error
 }
 
@@ -28,4 +28,10 @@ type Validater interface {
 // was executed.
 type DesiredStater interface {
 	DesiredState(octx Context) (state.State, error)
+}
+
+// ChangeDetector allows an operator to override the conditions under which a
+// state has changed.
+type ChangeDetector interface {
+	Changed(a, b state.State) (bool, error)
 }

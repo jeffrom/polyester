@@ -10,6 +10,8 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/Masterminds/sprig"
+
 	"github.com/jeffrom/polyester/operator/facts"
 )
 
@@ -27,7 +29,8 @@ func New(p string) *Templates {
 }
 
 func (t *Templates) Load() error {
-	tmpl := template.Must(template.New("plan").Parse(""))
+	fns := sprig.HermeticTxtFuncMap()
+	tmpl := template.Must(template.New("plan").Funcs(fns).Parse(""))
 
 	var tmplPaths []string
 	walkFn := func(p string, d fs.FileInfo, perr error) error {
@@ -63,6 +66,7 @@ func (t *Templates) Load() error {
 	// for _, t := range tmpl.Templates() {
 	// 	fmt.Println(t.Name(), t.Mode)
 	// }
+
 	t.tmpl = tmpl
 	return nil
 }

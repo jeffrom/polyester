@@ -369,7 +369,10 @@ func (r *Planner) executeOperation(octx operator.Context, op operator.Interface,
 	srcSt := st.Source()
 
 	prevEmpty := prevSrcSt.Empty()
-	changed := prevSrcSt.Changed(srcSt)
+	changed, err := r.getOpChanged(octx, op, prevSrcSt, srcSt)
+	if err != nil {
+		return nil, err
+	}
 	dirty = dirty || prevEmpty || changed
 	executed := false
 	if dirty {
@@ -415,6 +418,24 @@ func (r *Planner) executeOperation(octx operator.Context, op operator.Interface,
 	res.Dirty = dirty
 	res.Executed = executed
 	return res, nil
+}
+
+func (r *Planner) getOpChanged(octx operator.Context, op operator.Interface, prevst, currst state.State) (bool, error) {
+	chgfn := func(a, b state.State) (bool, error) {
+		return a.Changed(b), nil
+	}
+	if cop, ok := op.(operator.ChangeDetector); ok {
+		chgfn = cop.Changed
+	}
+
+	if dop, ok := op.(operator.DesiredStater); ok {
+		desiredst, err := dop.DesiredState(octx)
+		if err != nil {
+			return false, err
+		}
+		return chgfn(prevst, desiredst)
+	}
+	return chgfn(prevst, currst)
 }
 
 var planDeclBoilerplate = []byte(`# --- START polyester script boilerplate

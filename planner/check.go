@@ -119,7 +119,7 @@ func (r *Planner) validateScript(p string) error {
 		op := opc()
 		data := op.Info().Data()
 		cobraCmd := data.Command.Command
-		validater, _ := op.(operator.Validater)
+		validater, _ := op.(operator.Validator)
 		targ := data.Command.Target
 		cobraCmd.RunE = func(cmd *cobra.Command, args []string) error {
 			if data.Command.ApplyArgs != nil {
@@ -154,7 +154,7 @@ func (r *Planner) intermediateValidate(ctx context.Context, tmpDir string, opts 
 	octx := operator.NewContext(ctx, opfs.New(opts.DirRoot), opfs.NewPlanDirFS(r.planDir), nil)
 	for _, plan := range allPlans {
 		for _, op := range plan.Operations {
-			validater, ok := op.(operator.Validater)
+			validater, ok := op.(operator.Validator)
 			if !ok {
 				continue
 			}

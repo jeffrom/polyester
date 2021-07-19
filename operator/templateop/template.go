@@ -8,6 +8,8 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/jeffrom/polyester/operator"
+	"github.com/jeffrom/polyester/operator/fileop"
+	"github.com/jeffrom/polyester/operator/opfs"
 	"github.com/jeffrom/polyester/operator/templates"
 	"github.com/jeffrom/polyester/state"
 )
@@ -67,14 +69,31 @@ func (op Template) GetState(octx operator.Context) (state.State, error) {
 	}
 	fmt.Printf("template: GetState opts: %+v\ndata:%+v\n", opts, userData)
 
-	b := &bytes.Buffer{}
-	data := templates.Data{
-		Data: userData,
+	for i, dest := range opts.Dests {
+		buf := &bytes.Buffer{}
+		data := templates.Data{
+			Data:    userData,
+			Dest:    dest,
+			DestIdx: i,
+		}
+		if err := octx.Templates.ExecuteForOp(buf, opts.Path, data); err != nil {
+			return st, err
+		}
+		b := buf.Bytes()
+
+		checksum, err := fileop.ChecksumReader(bytes.NewReader(b))
+		if err != nil {
+			return st, err
+		}
+		// fmt.Printf("checksum %s, rendered:\n%s\n", string(checksum), string(b))
+
+		st = st.Append(state.Entry{
+			Name: dest,
+			File: &opfs.StateFileEntry{
+				SHA256: checksum,
+			},
+		})
 	}
-	if err := octx.Templates.ExecuteForOp(b, opts.Path, data); err != nil {
-		return st, err
-	}
-	fmt.Println("rendered:", b.String())
 	return st, nil
 }
 
