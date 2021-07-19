@@ -19,3 +19,5 @@ RUN set -x; \
 
 # RUN set -x; for pkg in $(go list ./...); do go test -c $pkg; done
 RUN set -x; go test -c ./cmd/polyester
+
+COPY testdata/age.agent.key /root/.config/polyester/age/test.agent
