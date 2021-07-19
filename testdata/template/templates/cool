@@ -1,0 +1,4 @@
+cool: {{ .Data.myvars.cool }}
+{{- if .Data.extra }}
+woah: {{ .Data.extra.woah }}
+{{- end }}

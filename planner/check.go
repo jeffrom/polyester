@@ -11,6 +11,7 @@ import (
 
 	"github.com/jeffrom/polyester/operator"
 	"github.com/jeffrom/polyester/operator/opfs"
+	"github.com/jeffrom/polyester/operator/templates"
 	"github.com/jeffrom/polyester/planner/shell"
 	"github.com/spf13/cobra"
 )
@@ -42,7 +43,7 @@ func (r *Planner) getPlanFile() string {
 	return pf
 }
 
-func (r *Planner) checkPlan(ctx context.Context, plan *Plan, tmpDir string, opts ApplyOpts) error {
+func (r *Planner) checkPlan(ctx context.Context, plan *Plan, tmpDir string, tmpl *templates.Templates, opts ApplyOpts) error {
 	if err := r.preValidate(ctx, tmpDir); err != nil {
 		return err
 	}
@@ -105,7 +106,7 @@ func (r *Planner) validateScript(p string) error {
 		return err
 	}
 
-	octx := operator.NewContext(context.Background(), nil, opfs.NewPlanDirFS(r.planDir))
+	octx := operator.NewContext(context.Background(), nil, opfs.NewPlanDirFS(r.planDir), nil)
 	for _, callExpr := range stmts {
 		lits := shell.Literals(callExpr.Args)
 		cmd, rawArgs := lits[1], lits[2:]
@@ -150,7 +151,7 @@ func (r *Planner) intermediateValidate(ctx context.Context, tmpDir string, opts 
 		return err
 	}
 
-	octx := operator.NewContext(ctx, opfs.New(opts.DirRoot), opfs.NewPlanDirFS(r.planDir))
+	octx := operator.NewContext(ctx, opfs.New(opts.DirRoot), opfs.NewPlanDirFS(r.planDir), nil)
 	for _, plan := range allPlans {
 		for _, op := range plan.Operations {
 			validater, ok := op.(operator.Validater)

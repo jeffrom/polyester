@@ -16,6 +16,7 @@ import (
 	"github.com/jeffrom/polyester/operator"
 	"github.com/jeffrom/polyester/operator/opfs"
 	"github.com/jeffrom/polyester/operator/planop"
+	"github.com/jeffrom/polyester/operator/templates"
 	"github.com/jeffrom/polyester/state"
 )
 
@@ -78,7 +79,12 @@ func (r *Planner) Apply(ctx context.Context, opts ApplyOpts) (*Result, error) {
 	}
 	fmt.Println("temp dir:", tmpDir)
 
-	if err := r.checkPlan(ctx, plan, tmpDir, opts); err != nil {
+	tmpl, err := r.setupTemplates(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := r.checkPlan(ctx, plan, tmpDir, tmpl, opts); err != nil {
 		return nil, err
 	}
 
@@ -86,7 +92,7 @@ func (r *Planner) Apply(ctx context.Context, opts ApplyOpts) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
-	res, err := r.executePlans(ctx, plan, stateDir, opts)
+	res, err := r.executePlans(ctx, plan, stateDir, tmpl, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -250,14 +256,14 @@ func (r *Planner) resolveOnePlan(ctx context.Context, plan *Plan, dir string, al
 	return nil
 }
 
-func (r *Planner) executePlans(ctx context.Context, plan *Plan, stateDir string, opts ApplyOpts) (*Result, error) {
+func (r *Planner) executePlans(ctx context.Context, plan *Plan, stateDir string, tmpl *templates.Templates, opts ApplyOpts) (*Result, error) {
 	dirRoot := opts.DirRoot
 	all, err := plan.All()
 	if err != nil {
 		return nil, err
 	}
 
-	octx := operator.NewContext(ctx, opfs.New(dirRoot), opfs.NewPlanDirFS(r.planDir))
+	octx := operator.NewContext(ctx, opfs.New(dirRoot), opfs.NewPlanDirFS(r.planDir), tmpl)
 	finalRes := &Result{}
 	for _, subplan := range all {
 		// fmt.Println("executeManifest", subplan.Name)

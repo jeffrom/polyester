@@ -9,6 +9,7 @@ import (
 	"github.com/jeffrom/polyester/operator/pkgop"
 	"github.com/jeffrom/polyester/operator/planop"
 	"github.com/jeffrom/polyester/operator/shellop"
+	"github.com/jeffrom/polyester/operator/templateop"
 	"github.com/jeffrom/polyester/operator/userop"
 	"github.com/jeffrom/polyester/state"
 )
@@ -46,6 +47,8 @@ func opCreators() []func() operator.Interface {
 		func() operator.Interface { return shellop.Shell{Args: &shellop.ShellOpts{}} },
 
 		func() operator.Interface { return userop.Useradd{Args: &userop.UseraddOpts{}} },
+
+		func() operator.Interface { return templateop.Template{Args: &templateop.TemplateOpts{}} },
 	}
 }
 
