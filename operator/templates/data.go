@@ -16,6 +16,9 @@ type Data struct {
 	// Data is any data provided via vars/default.yaml or --data.
 	Data map[string]interface{}
 
+	// Secrets are age-encrypted secret data files.
+	Secrets map[string][]byte
+
 	// Dest is the path to the current destination file.
 	Dest string
 
@@ -46,4 +49,8 @@ func (t *Templates) MergeData(dataPaths []string) (map[string]interface{}, error
 		}
 	}
 	return res, nil
+}
+
+func (t *Templates) MergeSecrets(secretDirs []string) (map[string][]byte, error) {
+	return nil, nil
 }

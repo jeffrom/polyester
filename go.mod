@@ -3,6 +3,7 @@ module github.com/jeffrom/polyester
 go 1.16
 
 require (
+	filippo.io/age v1.0.0-rc.3 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver v1.5.0 // indirect
 	github.com/Masterminds/sprig v2.22.0+incompatible

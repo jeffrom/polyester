@@ -3,6 +3,7 @@ package planner
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io/fs"
 	"io/ioutil"
@@ -369,13 +370,18 @@ func (r *Planner) executeOperation(octx operator.Context, op operator.Interface,
 	srcSt := st.Source()
 
 	desiredSt := state.New()
-	if dop, ok := op.(operator.DesiredStater); ok {
+	origOp, err := getOrigOp(op)
+	if err != nil {
+		return nil, err
+	}
+	if dop, ok := origOp.(operator.DesiredStater); ok {
 		var err error
 		desiredSt, err = dop.DesiredState(octx)
 		if err != nil {
 			return nil, err
 		}
 	}
+	// desiredSt.WriteTo(os.Stdout)
 
 	prevEmpty := prevSrcSt.Empty()
 	changed, err := r.getOpChanged(octx, op, prevSrcSt, srcSt, desiredSt)
@@ -437,6 +443,12 @@ func (r *Planner) getOpChanged(octx operator.Context, op operator.Interface, pre
 		chgfn = func(a, b state.State) (bool, error) { return a.Changed(b), nil }
 	}
 
+	// ch, err := chgfn(prevst, desiredst)
+	// fmt.Println("ZXCV desired empty", desiredst.Empty(), "changed", ch, err)
+	// prevst.WriteTo(os.Stdout)
+	// println()
+	// desiredst.WriteTo(os.Stdout)
+	// println()
 	if !desiredst.Empty() {
 		return chgfn(prevst, desiredst)
 	}
@@ -496,4 +508,20 @@ func addSelfPathToEnviron(environ []string) ([]string, error) {
 		environ = append(environ, pathEnv)
 	}
 	return environ, nil
+}
+
+func getOrigOp(op operator.Interface) (operator.Interface, error) {
+	next := allOps[op.Info().Name()]()
+	nextData := next.Info().Data()
+	if op.Info().Data().Command.Target == nil {
+		return next, nil
+	}
+	b, err := json.Marshal(op.Info().Data().Command.Target)
+	if err != nil {
+		return nil, err
+	}
+	if err := json.Unmarshal(b, nextData.Command.Target); err != nil {
+		return nil, err
+	}
+	return next, nil
 }

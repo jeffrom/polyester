@@ -42,9 +42,16 @@ func (pd fsPlanDir) WithSubplan(spdir string) PlanDir {
 	}
 }
 
-func (pd fsPlanDir) Open(name string) (fs.File, error) {
+func (pd fsPlanDir) cleanPath(name string) string {
 	name = strings.TrimPrefix(name, pd.dir+"/")
-	p := filepath.Join(pd.dir, name)
+	return name
+	// p := filepath.Join(pd.dir, name)
+	// return p
+}
+
+func (pd fsPlanDir) Open(name string) (fs.File, error) {
+	p := pd.cleanPath(name)
+	// fmt.Println("plandir Open:", p)
 	return pd.dirFS.Open(p)
 }
 

@@ -134,6 +134,9 @@ func (e Entry) Changed(oe Entry) bool {
 			// fmt.Println("changed bc diff file info nil-ness")
 			return true
 		}
+		if !bytes.Equal(sf.SHA256, of.SHA256) {
+			return true
+		}
 		if sf.Info != nil &&
 			sf.Info.IsDir() != of.Info.IsDir() ||
 			sf.Info.Mode() != of.Info.Mode() ||

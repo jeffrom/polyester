@@ -10,8 +10,6 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/Masterminds/sprig"
-
 	"github.com/jeffrom/polyester/operator/facts"
 )
 
@@ -29,7 +27,7 @@ func New(p string) *Templates {
 }
 
 func (t *Templates) Load() error {
-	fns := sprig.HermeticTxtFuncMap()
+	fns := tmplHelpers()
 	tmpl := template.Must(template.New("plan").Funcs(fns).Parse(""))
 
 	var tmplPaths []string
