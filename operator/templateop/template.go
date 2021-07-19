@@ -1,9 +1,13 @@
 package templateop
 
 import (
+	"bytes"
+	"fmt"
+
 	"github.com/spf13/cobra"
 
 	"github.com/jeffrom/polyester/operator"
+	"github.com/jeffrom/polyester/operator/templates"
 	"github.com/jeffrom/polyester/state"
 )
 
@@ -40,9 +44,15 @@ func (op Template) Info() operator.Info {
 }
 
 func (op Template) GetState(octx operator.Context) (state.State, error) {
-	// opts := op.Args.(*TemplateOpts)
+	opts := op.Args.(*TemplateOpts)
 	st := state.State{}
-	// fmt.Printf("template: GetState opts: %+v\n", opts)
+	fmt.Printf("template: GetState opts: %+v\n", opts)
+
+	b := &bytes.Buffer{}
+	if err := octx.Templates.ExecuteForOp(b, opts.Path, templates.Data{}); err != nil {
+		return st, err
+	}
+	fmt.Println("rendered:", b.String())
 	return st, nil
 }
 

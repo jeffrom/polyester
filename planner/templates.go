@@ -7,5 +7,9 @@ import (
 )
 
 func (r *Planner) setupTemplates(ctx context.Context) (*templates.Templates, error) {
-	return nil, nil
+	tmpl := templates.New(r.planDir)
+	if err := tmpl.Load(); err != nil {
+		return nil, err
+	}
+	return tmpl, nil
 }

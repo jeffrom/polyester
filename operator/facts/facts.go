@@ -15,10 +15,10 @@ var (
 )
 
 type Facts struct {
-	sysinfo.SysInfo
+	System sysinfo.SysInfo `json:"system"`
 }
 
-func Gather(ctx context.Context) (*Facts, error) {
+func Gather(ctx context.Context) (Facts, error) {
 	siOnce.Do(si.GetSysInfo)
-	return &Facts{SysInfo: si}, nil
+	return Facts{System: si}, nil
 }
