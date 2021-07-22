@@ -1,8 +1,0 @@
----
-ops:
-- op: touch
-  target:
-  - path: /tmp/hello
-  # name: touch a file
-  options:
-    - mode: 0600

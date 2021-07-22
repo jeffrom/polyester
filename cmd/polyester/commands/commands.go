@@ -8,6 +8,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/jeffrom/polyester/compiler"
 	"github.com/jeffrom/polyester/operator"
 	"github.com/jeffrom/polyester/planner"
 )
@@ -54,7 +55,7 @@ func ExecArgs(ctx context.Context, args []string) error {
 }
 
 func addOps(parent *cobra.Command, fn operatorCommandFunc) error {
-	for _, op := range planner.Operators() {
+	for _, op := range compiler.Operators() {
 		// fmt.Println("adding command name:", op.Info().Name())
 		parent.AddCommand(fn(op))
 	}
@@ -76,7 +77,7 @@ func operatorCommandForPlan(op operator.Interface) *cobra.Command {
 		if planFile == "" {
 			return errors.New("expected $_POLY_PLAN to be set")
 		}
-		return planner.AppendPlan(cmd.Context(), planFile, info, cmd, args)
+		return compiler.AppendPlan(cmd.Context(), planFile, info, cmd, args)
 	}
 	return cobraCmd
 }

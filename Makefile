@@ -37,7 +37,6 @@ build: $(bin)
 $(bin): $(gofiles)
 	$(GO) build $(GOFLAGS) \
 		-ldflags "-X main.Prefix=$(PREFIX) \
-		-X main.ShareDir=$(SHAREDIR) \
 		-X main.Version=$(VERSION)" \
 		-o $@ \
 		./cmd/polyester
@@ -96,12 +95,12 @@ uninstall:
 ci: build doc test.cover test.lint
 
 .PHONY: test
-test:
-	GO111MODULE=on go test -short -cover ./...
+test: build
+	GO111MODULE=on TESTBIN=$$(pwd)/polyester go test -short -cover -count 1 ./...
 
 .PHONY: test.race
 test.race:
-	GO111MODULE=on go test -race ./...
+	GO111MODULE=on TESTBIN=$$(pwd)/polyester go test -race ./...
 
 .PHONY: test.lint
 test.lint: $(staticcheck)
@@ -112,7 +111,7 @@ test.lint: $(staticcheck)
 .PHONY: test.cover
 test.cover: SHELL:=/bin/bash
 test.cover: $(gocoverutil)
-	set -eo pipefail; $(gocoverutil) -coverprofile=cov.out test -covermode=count ./... \
+	set -eo pipefail; TESTBIN=$$(pwd)/polyester $(gocoverutil) -coverprofile=cov.out test -covermode=count ./... \
 		2> >(grep -v "no packages being tested depend on matches for pattern" 1>&2) \
 		| sed -e 's/of statements in .*/of statements/'
 	@echo -n "total: "; go tool cover -func=cov.out | tail -n 1 | sed -e 's/\((statements)\|total:\)//g' | tr -s "[:space:]"

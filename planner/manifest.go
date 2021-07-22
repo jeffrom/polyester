@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/jeffrom/polyester/compiler"
 	"github.com/jeffrom/polyester/operator/opfs"
 )
 
@@ -26,7 +27,7 @@ import (
 // 	dir string
 // }
 
-func (r *Planner) setupState(plan *Plan, opts ApplyOpts) (string, error) {
+func (r *Planner) setupState(plan *compiler.Plan, opts ApplyOpts) (string, error) {
 	// 1. figure out if this is a single script run & find the manifest file
 	// (the nearest parent with polyester.sh)
 	mDir, err := r.findManifestDir()
@@ -58,7 +59,7 @@ func (r *Planner) setupState(plan *Plan, opts ApplyOpts) (string, error) {
 	return stateDir, nil
 }
 
-func (r *Planner) pruneState(plan *Plan, stateDir string) error {
+func (r *Planner) pruneState(plan *compiler.Plan, stateDir string) error {
 	// don't prune for single subplan runs, only for manifests.
 	mDir, err := r.findManifestDir()
 	if err != nil {
@@ -117,7 +118,7 @@ func (r *Planner) findManifestDir() (string, error) {
 	return mDir, nil
 }
 
-func (r *Planner) gatherOpKeys(plan *Plan, stateDir string, keys map[string]bool) (map[string]bool, error) {
+func (r *Planner) gatherOpKeys(plan *compiler.Plan, stateDir string, keys map[string]bool) (map[string]bool, error) {
 	if keys == nil {
 		keys = make(map[string]bool)
 	}
@@ -159,7 +160,7 @@ func manifestKey(dir string) string {
 
 // manifestChecksum returns a checksum of the manifest suitable for determining
 // equality to other manifests.
-func manifestChecksum(plan *Plan, h hash.Hash) (string, error) {
+func manifestChecksum(plan *compiler.Plan, h hash.Hash) (string, error) {
 	parent := false
 	if h == nil {
 		h = sha256.New()

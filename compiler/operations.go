@@ -1,6 +1,7 @@
-package planner
+package compiler
 
 import (
+	"encoding/json"
 	"sync"
 
 	"github.com/jeffrom/polyester/operator"
@@ -60,6 +61,22 @@ func Operators() []operator.Interface {
 		res[i] = opc()
 	}
 	return res
+}
+
+func GetOperation(op operator.Interface) (operator.Interface, error) {
+	next := allOps[op.Info().Name()]()
+	nextData := next.Info().Data()
+	if op.Info().Data().Command.Target == nil {
+		return next, nil
+	}
+	b, err := json.Marshal(op.Info().Data().Command.Target)
+	if err != nil {
+		return nil, err
+	}
+	if err := json.Unmarshal(b, nextData.Command.Target); err != nil {
+		return nil, err
+	}
+	return next, nil
 }
 
 // operation is an implementation of operator.Interface that uses decoded Plan

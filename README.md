@@ -36,7 +36,7 @@ $ make && ./polyester apply testdata/basic
 run a single plan in a filesystem sandbox, w/ an overridden state directory:
 
 ```bash
-$ make && ./polyester apply --dir-root /tmp/polytest --state-dir /tmp/polystate testdata/basic/plans/touchy/install.sh
+$ make && ./polyester apply --dir-root /tmp/polytest --state-dir /tmp/polystate testdata/basic/plans/touchy/plan.sh
 ```
 
 Normal usage entails running `polyester apply` on remote servers. To continuously update a git repository containing the polyester manifest, a cron could periodically run a script such as:

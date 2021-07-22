@@ -1,22 +1,17 @@
 package planner
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"io/fs"
 	"io/ioutil"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
-	"github.com/mattn/go-isatty"
-
+	"github.com/jeffrom/polyester/compiler"
+	"github.com/jeffrom/polyester/manifest"
 	"github.com/jeffrom/polyester/operator"
 	"github.com/jeffrom/polyester/operator/opfs"
-	"github.com/jeffrom/polyester/operator/planop"
 	"github.com/jeffrom/polyester/operator/templates"
 	"github.com/jeffrom/polyester/state"
 )
@@ -28,7 +23,7 @@ type ApplyOpts struct {
 	StateDir     string
 }
 
-func (o ApplyOpts) WithDefaults() ApplyOpts {
+func (o ApplyOpts) withDefaults() ApplyOpts {
 	dirRoot := o.DirRoot
 	if dirRoot == "" {
 		dirRoot = "/"
@@ -48,15 +43,11 @@ func (o ApplyOpts) WithDefaults() ApplyOpts {
 }
 
 func (r *Planner) Apply(ctx context.Context, opts ApplyOpts) (*Result, error) {
-	opts = opts.WithDefaults()
+	opts = opts.withDefaults()
 	if err := os.MkdirAll(opts.StateDir, 0700); err != nil {
 		return nil, err
 	}
 	pfPath := r.getPlanFile()
-	pb, err := fs.ReadFile(os.DirFS(r.rootDir), pfPath)
-	if err != nil {
-		return nil, err
-	}
 	planDir, err := r.resolvePlanDir(ctx)
 	if err != nil {
 		return nil, err
@@ -74,7 +65,11 @@ func (r *Planner) Apply(ctx context.Context, opts ApplyOpts) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
-	plan, err := r.compileMainPlan(ctx, tmpDir, pb)
+	mani, err := manifest.LoadDir(planDir)
+	if err != nil {
+		return nil, err
+	}
+	plan, err := compiler.New().Compile(ctx, mani)
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +80,7 @@ func (r *Planner) Apply(ctx context.Context, opts ApplyOpts) (*Result, error) {
 		return nil, err
 	}
 
-	if err := r.checkPlan(ctx, plan, tmpDir, tmpl, opts); err != nil {
+	if err := r.checkPlan(ctx, plan, tmpl, opts); err != nil {
 		return nil, err
 	}
 
@@ -130,134 +125,7 @@ func (r *Planner) getIntermediatePlanDir(opts ApplyOpts) (string, error) {
 	return tmpDir, nil
 }
 
-// compileMainPlan writes a single plan, and any of its dependencies, into the
-// local filesystem.
-func (r *Planner) compileMainPlan(ctx context.Context, tmpDir string, planb []byte) (*Plan, error) {
-	if err := r.execPlanDeclaration(ctx, tmpDir, "plan", planb); err != nil {
-		return nil, err
-	}
-	plan, err := r.resolvePlan(ctx, tmpDir)
-	return plan, err
-}
-
-func (r *Planner) execPlanDeclaration(ctx context.Context, dir, name string, planb []byte) error {
-	if err := os.MkdirAll(filepath.Join(dir, "_scripts"), 0700); err != nil {
-		return err
-	}
-	if err := os.MkdirAll(filepath.Join(dir, "plans"), 0700); err != nil {
-		return err
-	}
-	scriptFile := filepath.Join(dir, "_scripts", name+".sh")
-	if err := ioutil.WriteFile(scriptFile, annotatePlanScript(planb), 0700); err != nil {
-		return err
-	}
-
-	if err := r.validateScript(scriptFile); err != nil {
-		return err
-	}
-
-	var planFile string
-	if name == "plan" {
-		// main plan case
-		planFile = filepath.Join(dir, "plan.yaml")
-	} else {
-		planFile = filepath.Join(dir, "plans", name+".yaml")
-	}
-
-	environ := []string{
-		fmt.Sprintf("_POLY_PLAN=%s", planFile),
-	}
-	environ, err := addSelfPathToEnviron(environ)
-	if err != nil {
-		return err
-	}
-
-	cmd := exec.CommandContext(ctx, scriptFile)
-	cmd.Env = append(os.Environ(), environ...)
-	if isatty.IsTerminal(os.Stdout.Fd()) {
-		cmd.Stdin = os.Stdin
-	}
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	fmt.Printf("+ _POLY_PLAN=%s %s \n", planFile, scriptFile)
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (r *Planner) resolvePlan(ctx context.Context, dir string) (*Plan, error) {
-	plan, err := ReadPlan(filepath.Join(dir, "plan.yaml"))
-	if err != nil {
-		return nil, err
-	}
-
-	allPlans := make(map[string]*Plan)
-	if err := r.resolveOnePlan(ctx, plan, dir, allPlans); err != nil {
-		return nil, err
-	}
-	return plan, nil
-}
-
-func (r *Planner) resolveOnePlan(ctx context.Context, plan *Plan, dir string, allPlans map[string]*Plan) error {
-	if _, ok := allPlans[plan.Name]; ok {
-		return nil
-	}
-	for _, op := range plan.Operations {
-		info := op.Info()
-		name := info.Name()
-		// fmt.Printf("uhhh %+v\n", name)
-		targ := info.Data().Command.Target
-		var planNames []string
-		switch name {
-		case "plan":
-			planNames = targ.(*planop.PlanOpts).Plans
-		case "dependency":
-			planNames = targ.(*planop.DependencyOpts).Plans
-		}
-		if len(planNames) > 0 {
-			fmt.Printf("resolving plan(s): %v\n", planNames)
-		}
-		for _, planName := range planNames {
-			planb, err := os.ReadFile(filepath.Join(r.planDir, "plans", planName, "install.sh"))
-			if err != nil {
-				return fmt.Errorf("failed to read plan file: %w", err)
-			}
-			if err := r.execPlanDeclaration(ctx, dir, planName, planb); err != nil {
-				return fmt.Errorf("failed to compile plan %q: %w", planName, err)
-			}
-
-			subplan, err := ReadPlan(filepath.Join(dir, "plans", planName+".yaml"))
-			if err != nil {
-				return err
-			}
-			// fmt.Println("resolve YEA:", name, subplan.Name)
-			switch name {
-			case "plan":
-				plan.Plans = append(plan.Plans, subplan)
-			case "dependency":
-				plan.Dependencies = append(plan.Dependencies, subplan)
-			}
-		}
-	}
-
-	for _, sp := range plan.Dependencies {
-		if err := r.resolveOnePlan(ctx, sp, dir, allPlans); err != nil {
-			return err
-		}
-	}
-	for _, sp := range plan.Plans {
-		if err := r.resolveOnePlan(ctx, sp, dir, allPlans); err != nil {
-			return err
-		}
-	}
-
-	allPlans[plan.Name] = plan
-	return nil
-}
-
-func (r *Planner) executePlans(ctx context.Context, plan *Plan, stateDir string, tmpl *templates.Templates, opts ApplyOpts) (*Result, error) {
+func (r *Planner) executePlans(ctx context.Context, plan *compiler.Plan, stateDir string, tmpl *templates.Templates, opts ApplyOpts) (*Result, error) {
 	dirRoot := opts.DirRoot
 	all, err := plan.All()
 	if err != nil {
@@ -283,8 +151,8 @@ func (r *Planner) executePlans(ctx context.Context, plan *Plan, stateDir string,
 }
 
 // executePlan runs a single plan
-func (r *Planner) executePlan(octx operator.Context, plan *Plan, stateDir string, opts ApplyOpts) (*PlanResult, error) {
-	if plan.Name != "plan" {
+func (r *Planner) executePlan(octx operator.Context, plan *compiler.Plan, stateDir string, opts ApplyOpts) (*PlanResult, error) {
+	if plan.Name != "main" {
 		// fmt.Println("setting subdir", plan.Name)
 		octx = octx.WithSubplan(filepath.Join(r.planDir, "plans", plan.Name))
 		// fmt.Println("executePlan plan dir:", octx.PlanDir.Join("/"))
@@ -317,7 +185,7 @@ func (r *Planner) executePlan(octx operator.Context, plan *Plan, stateDir string
 	return finalRes, nil
 }
 
-func (r *Planner) readOpStates(octx operator.Context, plan *Plan, stateDir string, opts ApplyOpts) ([]state.State, []state.State, error) {
+func (r *Planner) readOpStates(octx operator.Context, plan *compiler.Plan, stateDir string, opts ApplyOpts) ([]state.State, []state.State, error) {
 	var prevs []state.State
 	var currs []state.State
 	for _, op := range plan.Operations {
@@ -371,7 +239,7 @@ func (r *Planner) executeOperation(octx operator.Context, op operator.Interface,
 	srcSt := st.Source()
 
 	desiredSt := state.New()
-	origOp, err := getOrigOp(op)
+	origOp, err := compiler.GetOperation(op)
 	if err != nil {
 		return nil, err
 	}
@@ -455,75 +323,4 @@ func (r *Planner) getOpChanged(octx operator.Context, op operator.Interface, pre
 		return chgfn(prevst, desiredst)
 	}
 	return chgfn(prevst, currst)
-}
-
-var planDeclBoilerplate = []byte(`# --- START polyester script boilerplate
-alias P=polyester
-
-# --- END polyester script boilerplate
-`)
-
-// annotatePlanScript adds boilerplate to plan script before executing them.
-// All it currently adds is: alias P polyester
-func annotatePlanScript(planb []byte) []byte {
-	res := make([]byte, len(planb)+len(planDeclBoilerplate))
-	// if the first line is a shebang, put the boilerplate on the second line
-	if bytes.HasPrefix(planb, []byte("#!")) {
-		idx := bytes.Index(planb, []byte("\n"))
-		if idx == -1 || len(planb) < idx+1 {
-			return planb
-		}
-		firstLine := planb[:idx+1]
-		copy(res, firstLine)
-		copy(res[idx+1:], planDeclBoilerplate)
-		copy(res[idx+1+len(planDeclBoilerplate):], planb[idx+1:])
-		return res
-	}
-	copy(res, planDeclBoilerplate)
-	copy(res[len(planDeclBoilerplate):], planb)
-	return res
-}
-
-func addSelfPathToEnviron(environ []string) ([]string, error) {
-	// make sure we're using the current polyester binary for compilation
-	abs, err := filepath.Abs(os.Args[0])
-	if err != nil {
-		return nil, err
-	}
-	selfDir, _ := filepath.Split(abs)
-	selfDir = filepath.Clean(selfDir)
-	found := false
-	for i, env := range environ {
-		parts := strings.SplitN(env, "=", 2)
-		key := parts[0]
-		if key != "PATH" {
-			continue
-		}
-
-		environ[i] = selfDir + ":" + env
-		// fmt.Println("set $PATH=", environ[i])
-		found = true
-		break
-	}
-	if !found {
-		pathEnv := fmt.Sprintf("PATH=%s:/bin:/usr/bin:/usr/local/bin", selfDir)
-		environ = append(environ, pathEnv)
-	}
-	return environ, nil
-}
-
-func getOrigOp(op operator.Interface) (operator.Interface, error) {
-	next := allOps[op.Info().Name()]()
-	nextData := next.Info().Data()
-	if op.Info().Data().Command.Target == nil {
-		return next, nil
-	}
-	b, err := json.Marshal(op.Info().Data().Command.Target)
-	if err != nil {
-		return nil, err
-	}
-	if err := json.Unmarshal(b, nextData.Command.Target); err != nil {
-		return nil, err
-	}
-	return next, nil
 }
