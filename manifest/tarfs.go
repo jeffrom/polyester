@@ -94,15 +94,6 @@ func (tfs *tarFS) ensureDirs(name string) {
 	tfs.files = orig.files
 }
 
-func hasDir(name string, files []*tarFile) bool {
-	for _, file := range files {
-		if name == file.name {
-			return true
-		}
-	}
-	return false
-}
-
 func (tfs *tarFS) lookupDir(name string) (*tarFile, bool) {
 	parts, _ := splitParts(name)
 	var curr *tarFile
@@ -175,11 +166,7 @@ func (tf tarFile) Stat() (fs.FileInfo, error) { return tf, nil }
 
 func (tf tarFile) Read(b []byte) (int, error) { return tf.r.Read(b) }
 
-func (tf tarFile) Close() error {
-	tf.r = nil
-	tf.contents = nil
-	return nil
-}
+func (tf tarFile) Close() error { return nil }
 
 func (tf tarFile) Name() string       { return filepath.Base(tf.name) }
 func (tf tarFile) Size() int64        { return int64(len(tf.contents)) }

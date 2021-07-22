@@ -23,7 +23,7 @@ func operatorCommandForExec(op operator.Interface) *cobra.Command {
 	info := op.Info()
 	cmd := info.Data().Command
 
-	cobraCmd := &*cmd.Command
+	cobraCmd := cmd.Command
 	cobraCmd.RunE = func(cmd *cobra.Command, args []string) error {
 		return nil
 	}

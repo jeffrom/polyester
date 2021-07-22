@@ -21,7 +21,7 @@ type InfoData struct {
 
 func (id *InfoData) Copy() *InfoData {
 	cp := *id
-	cp.Command = &*id.Command
+	cp.Command = id.Command
 	return &cp
 }
 

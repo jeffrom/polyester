@@ -75,16 +75,16 @@ func (e Entry) WithoutTimestamps() Entry {
 	}
 }
 
-type stateEntries []Entry
+// type stateEntries []Entry
 
-func (se stateEntries) Len() int {
-	return len(se)
-}
+// func (se stateEntries) Len() int {
+// 	return len(se)
+// }
 
-func (se stateEntries) Swap(i, j int) {
-	se[i], se[j] = se[j], se[i]
-}
+// func (se stateEntries) Swap(i, j int) {
+// 	se[i], se[j] = se[j], se[i]
+// }
 
-func (se stateEntries) Less(i, j int) bool {
-	return se[i].Name < se[j].Name
-}
+// func (se stateEntries) Less(i, j int) bool {
+// 	return se[i].Name < se[j].Name
+// }

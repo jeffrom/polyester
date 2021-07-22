@@ -29,12 +29,9 @@ func (c *Compiler) Compile(ctx context.Context, m *manifest.Manifest) (*Plan, er
 	allOptsOnce.Do(setupAllOps)
 	var environ []string
 	var selfFile string
-	if c.environ != nil {
-		environ = c.environ
-		selfFile = c.selfFile
-	} else {
+	if c.environ == nil {
 		var err error
-		selfFile, environ, err = addSelfPathToEnviron([]string{fmt.Sprintf("_POLY_PLAN=-")})
+		selfFile, environ, err = addSelfPathToEnviron([]string{"_POLY_PLAN=-"})
 		if err != nil {
 			return nil, err
 		}

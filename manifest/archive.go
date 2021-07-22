@@ -112,6 +112,9 @@ func LoadArchive(r io.Reader) (*Manifest, error) {
 			return nil, errors.New("manifest contains illegally named files")
 		}
 
+		// if _, err := io.CopyN(b, tr, 1024*1024*256); err != nil {
+		// 	return nil, err
+		// }
 		if _, err := io.Copy(b, tr); err != nil {
 			return nil, err
 		}

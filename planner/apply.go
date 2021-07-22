@@ -3,7 +3,6 @@ package planner
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -61,10 +60,6 @@ func (r *Planner) Apply(ctx context.Context, opts ApplyOpts) (*Result, error) {
 		strings.TrimPrefix(planDir, wd+"/"),
 		strings.TrimPrefix(filepath.Join(r.rootDir, pfPath), wd+"/"))
 
-	tmpDir, err := r.getIntermediatePlanDir(opts)
-	if err != nil {
-		return nil, err
-	}
 	mani, err := manifest.LoadDir(planDir)
 	if err != nil {
 		return nil, err
@@ -73,7 +68,6 @@ func (r *Planner) Apply(ctx context.Context, opts ApplyOpts) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("temp dir:", tmpDir)
 
 	tmpl, err := r.setupTemplates(ctx)
 	if err != nil {
@@ -96,9 +90,6 @@ func (r *Planner) Apply(ctx context.Context, opts ApplyOpts) (*Result, error) {
 		return nil, err
 	}
 
-	if err := os.RemoveAll(tmpDir); err != nil {
-		return nil, err
-	}
 	return res, nil
 }
 
@@ -115,14 +106,6 @@ func (r *Planner) resolvePlanDir(ctx context.Context) (string, error) {
 	}
 	r.planDir = lastMatch
 	return lastMatch, nil
-}
-
-func (r *Planner) getIntermediatePlanDir(opts ApplyOpts) (string, error) {
-	tmpDir, err := ioutil.TempDir("", "polyester")
-	if err != nil {
-		return "", err
-	}
-	return tmpDir, nil
 }
 
 func (r *Planner) executePlans(ctx context.Context, plan *compiler.Plan, stateDir string, tmpl *templates.Templates, opts ApplyOpts) (*Result, error) {

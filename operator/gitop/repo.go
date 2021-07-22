@@ -25,8 +25,7 @@ type RepoOpts struct {
 }
 
 type Repo struct {
-	Args         interface{}
-	gotStateOnce bool
+	Args interface{}
 }
 
 func (op Repo) Info() operator.Info {
