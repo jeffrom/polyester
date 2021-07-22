@@ -64,10 +64,7 @@ func getStateFileGlobs(ofs operator.FS, st state.State, dest string, globs, excl
 	}
 
 	st, err = appendFiles(ofs, st, true, true, dests...)
-	if err != nil {
-		return st, err
-	}
-	return st, nil
+	return st, err
 }
 
 // appendFiles appends files to the state, include full mode and checksum.
