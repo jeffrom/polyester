@@ -108,6 +108,14 @@ func (s State) Changed(other State) bool {
 	return false
 }
 
+func (s State) Map(fn func(e Entry) Entry) State {
+	res := make([]Entry, len(s.Entries))
+	for i, e := range s.Entries {
+		res[i] = fn(e)
+	}
+	return State{Entries: res}
+}
+
 type States struct {
 	States []StatesEntry `json:"states"`
 }

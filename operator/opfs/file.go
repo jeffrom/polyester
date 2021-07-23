@@ -51,17 +51,21 @@ func (f *StateFileEntry) WithoutTimestamps() *StateFileEntry {
 		return nil
 	}
 	fi := f.Info
-	return &StateFileEntry{
-		Info: StateFileInfo{
+	sf := &StateFileEntry{
+		Info:     fi,
+		SHA256:   f.SHA256,
+		Contents: f.Contents,
+	}
+	if fi != nil {
+		sf.Info = StateFileInfo{
 			RawName:  fi.Name(),
 			RawMode:  fi.Mode(),
 			RawSize:  fi.Size(),
 			SHA256:   f.SHA256,
 			Contents: f.Contents,
-		},
-		SHA256:   f.SHA256,
-		Contents: f.Contents,
+		}
 	}
+	return sf
 }
 
 type StateFileInfo struct {

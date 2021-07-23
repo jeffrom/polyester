@@ -67,9 +67,13 @@ func (e Entry) Changed(oe Entry) bool {
 }
 
 func (e Entry) WithoutTimestamps() Entry {
+	file := e.File
+	if file != nil {
+		file = e.File.WithoutTimestamps()
+	}
 	return Entry{
 		Name:   e.Name,
-		File:   e.File.WithoutTimestamps(),
+		File:   file,
 		KV:     e.KV,
 		Target: e.Target,
 	}

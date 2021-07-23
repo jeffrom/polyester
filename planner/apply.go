@@ -293,8 +293,12 @@ func (r *Planner) executeOperation(octx operator.Context, op operator.Interface,
 }
 
 func (r *Planner) getOpChanged(octx operator.Context, op operator.Interface, prevst, currst, desiredst state.State) (bool, error) {
+	origOp, err := compiler.GetOperation(op)
+	if err != nil {
+		return false, err
+	}
 	var chgfn func(a, b state.State) (bool, error)
-	if cop, ok := op.(operator.ChangeDetector); ok {
+	if cop, ok := origOp.(operator.ChangeDetector); ok {
 		chgfn = cop.Changed
 	} else {
 		chgfn = func(a, b state.State) (bool, error) { return a.Changed(b), nil }

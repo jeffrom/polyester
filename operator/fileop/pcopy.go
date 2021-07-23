@@ -62,6 +62,11 @@ func (op Pcopy) GetState(octx operator.Context) (state.State, error) {
 	// st.WriteTo(os.Stdout)
 }
 
+func (op Pcopy) Changed(a, b state.State) (bool, error) {
+	fn := func(e state.Entry) state.Entry { return e.WithoutTimestamps() }
+	return a.Map(fn).Changed(b.Map(fn)), nil
+}
+
 func (op Pcopy) Run(octx operator.Context) error {
 	opts := op.Args.(*PcopyOpts)
 	sources, err := octx.PlanDir.Resolve("files", opts.Sources)
