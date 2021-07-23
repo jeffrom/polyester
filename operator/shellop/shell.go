@@ -98,7 +98,7 @@ func (op Shell) GetState(octx operator.Context) (state.State, error) {
 		if err != nil {
 			return st, err
 		}
-		// fmt.Println("target filez from", octx.FS.Join(opts.Dir, targ), files)
+		fmt.Println("target filez from", octx.FS.Join(opts.Dir, targ), files)
 
 		for _, fp := range files {
 			ig, err := shouldIgnore(fp, opts.IgnoreREs)
