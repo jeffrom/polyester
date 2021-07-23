@@ -58,8 +58,11 @@ func (op Pcopy) GetState(octx operator.Context) (state.State, error) {
 	}
 
 	st, err = getStateFileGlobs(octx.FS, state.State{}, opts.Dest, sources, opts.ExcludeGlobs)
+	if err != nil {
+		return st, err
+	}
 	st = st.Map(func(e state.Entry) state.Entry { return e.WithoutTimestamps() })
-	return st, err
+	return st, nil
 	// st.WriteTo(os.Stdout)
 }
 

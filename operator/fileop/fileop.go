@@ -49,19 +49,19 @@ func getStateFileGlobs(ofs operator.FS, st state.State, dest string, globs, excl
 		return st, err
 	}
 
-	info, err := ofs.Stat(dest)
-	if err != nil && !errors.Is(err, os.ErrNotExist) {
-		return st, err
-	}
+	// info, err := ofs.Stat(dest)
+	// if err != nil && !errors.Is(err, os.ErrNotExist) {
+	// 	return st, err
+	// }
 
 	dests := []string{dest}
-	if info != nil && info.IsDir() {
-		var err error
-		dests, err = gatherFilesDir(ofs, []string{dest}, excludes)
-		if err != nil {
-			return st, err
-		}
-	}
+	// if info != nil && info.IsDir() {
+	// 	var err error
+	// 	dests, err = gatherFilesDir(ofs, []string{dest}, excludes)
+	// 	if err != nil {
+	// 		return st, err
+	// 	}
+	// }
 
 	st, err = appendFiles(ofs, st, true, true, dests...)
 	return st, err
