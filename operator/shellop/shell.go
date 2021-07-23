@@ -2,6 +2,7 @@ package shellop
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -132,7 +133,8 @@ func (op Shell) GetState(octx operator.Context) (state.State, error) {
 		}
 	}
 
-	// st.WriteTo(os.Stdout)
+	st.WriteTo(os.Stdout)
+	fmt.Println()
 	return st, nil
 }
 
