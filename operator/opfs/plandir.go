@@ -63,9 +63,9 @@ func (pd fsPlanDir) checkPath(name string) error {
 }
 
 func (pd fsPlanDir) Open(name string) (fs.File, error) {
-	if err := pd.checkPath(name); err != nil {
-		return nil, err
-	}
+	// if err := pd.checkPath(name); err != nil {
+	// 	return nil, err
+	// }
 	if filepath.IsAbs(name) {
 		return pd.dirFS.Open(name)
 	}
