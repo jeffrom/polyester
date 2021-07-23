@@ -94,11 +94,14 @@ func (op Shell) GetState(octx operator.Context) (state.State, error) {
 	}
 
 	for _, targ := range opts.Targets {
-		files, err := octx.FS.Glob(filepath.Join(opts.Dir, targ))
+		if !filepath.IsAbs(targ) {
+			targ = filepath.Join(opts.Dir, targ)
+		}
+		files, err := octx.FS.Glob(targ)
 		if err != nil {
 			return st, err
 		}
-		fmt.Println("target filez from", octx.FS.Join(opts.Dir, targ), files)
+		// fmt.Println("target filez from", octx.FS.Join(opts.Dir, targ), files)
 
 		for _, fp := range files {
 			ig, err := shouldIgnore(fp, opts.IgnoreREs)
