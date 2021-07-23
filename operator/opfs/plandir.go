@@ -63,6 +63,8 @@ func (pd fsPlanDir) checkPath(op, name string) error {
 }
 
 func (pd fsPlanDir) Open(name string) (fs.File, error) {
+	// TODO need to fix pcopy to reenable this. pcopy is piggybacking on
+	// plandir for a silly reason.
 	// if err := pd.checkPath("open", name); err != nil {
 	// 	return nil, err
 	// }
@@ -75,9 +77,9 @@ func (pd fsPlanDir) Open(name string) (fs.File, error) {
 }
 
 func (pd fsPlanDir) Stat(name string) (fs.FileInfo, error) {
-	if err := pd.checkPath("stat", name); err != nil {
-		return nil, err
-	}
+	// if err := pd.checkPath("stat", name); err != nil {
+	// 	return nil, err
+	// }
 	if filepath.IsAbs(name) {
 		return os.Stat(name)
 	}
