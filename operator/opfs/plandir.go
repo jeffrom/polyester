@@ -47,45 +47,88 @@ func (pd fsPlanDir) WithSubplan(spdir string) PlanDir {
 func (pd fsPlanDir) cleanPath(name string) string {
 	name = strings.TrimPrefix(name, pd.dir+"/")
 	return name
-	// p := filepath.Join(pd.dir, name)
-	// return p
+	// if filepath.IsAbs(name) {
+	// 	return name
+	// }
+	// return filepath.Join(pd.dir, name)
+}
+
+func (pd fsPlanDir) checkPath(name string) error {
+	if filepath.IsAbs(name) {
+		if !strings.HasPrefix(filepath.Clean(name), filepath.Clean(pd.dir)) {
+			return &fs.PathError{Op: "plandir-open", Path: name, Err: fs.ErrInvalid}
+		}
+	}
+	return nil
 }
 
 func (pd fsPlanDir) Open(name string) (fs.File, error) {
+	if err := pd.checkPath(name); err != nil {
+		return nil, err
+	}
+	if filepath.IsAbs(name) {
+		return pd.dirFS.Open(name)
+	}
 	p := pd.cleanPath(name)
-	// fmt.Println("plandir Open:", p)
+	fmt.Println("plandir Open:", name, p)
 	return pd.dirFS.Open(p)
 }
 
 func (pd fsPlanDir) Stat(name string) (fs.FileInfo, error) {
-	name = strings.TrimPrefix(name, pd.dir+"/")
-	p := filepath.Join(pd.dir, name)
+	if err := pd.checkPath(name); err != nil {
+		return nil, err
+	}
+	if filepath.IsAbs(name) {
+		return os.Stat(name)
+	}
+	p := pd.cleanPath(name)
 	return os.Stat(p)
 }
 
 func (pd fsPlanDir) ReadDir(name string) ([]fs.DirEntry, error) {
-	name = strings.TrimPrefix(name, pd.dir+"/")
-	p := filepath.Join(pd.dir, name)
+	if err := pd.checkPath(name); err != nil {
+		return nil, err
+	}
+	if filepath.IsAbs(name) {
+		return os.ReadDir(name)
+	}
+	p := pd.cleanPath(name)
 	return os.ReadDir(p)
 }
 
 func (pd fsPlanDir) ReadFile(name string) ([]byte, error) {
-	name = strings.TrimPrefix(name, pd.dir+"/")
-	p := filepath.Join(pd.dir, name)
+	if err := pd.checkPath(name); err != nil {
+		return nil, err
+	}
+	if filepath.IsAbs(name) {
+		return os.ReadFile(name)
+	}
+	p := pd.cleanPath(name)
 	return os.ReadFile(p)
 }
 
 func (pd fsPlanDir) Glob(pattern string) ([]string, error) {
+	if err := pd.checkPath(pattern); err != nil {
+		return nil, err
+	}
 	return doublestar.Glob(pd, pattern)
 }
 
 func (pd fsPlanDir) Join(paths ...string) string {
+	joined := filepath.Join(paths...)
+	if err := pd.checkPath(joined); err != nil {
+		panic(err)
+	}
+	if filepath.IsAbs(joined) {
+		return joined
+	}
+
 	dir := pd.dir
 	// if pd.spdir != "" {
 	// 	dir = pd.spdir
 	// 	fmt.Println("uh oh", dir)
 	// }
-	return filepath.Join(append([]string{dir}, paths...)...)
+	return filepath.Join(dir, joined)
 }
 
 func (pd fsPlanDir) Subplan() string {

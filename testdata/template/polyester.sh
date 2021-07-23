@@ -12,3 +12,5 @@ P template cool $testdir/cool2
 P template \
     --data extra.yaml \
     cool $testdir/extracool
+
+# ls -alF /src/testdata/template/plans/nice/secrets/

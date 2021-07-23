@@ -23,7 +23,10 @@ func New(root string) FS {
 	}
 }
 
-func (fs FS) Open(name string) (fs.File, error) { return fs.dirFS.Open(name) }
+func (fs FS) Open(name string) (fs.File, error) {
+	// fmt.Println("opfs.FS.Open:", name)
+	return fs.dirFS.Open(name)
+}
 
 func (fs FS) cleanPath(name string) string {
 	if strings.HasPrefix(name, fs.root) {

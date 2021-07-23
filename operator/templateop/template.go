@@ -208,9 +208,10 @@ func readSecretData(octx operator.Context, ids []age.Identity, opts *TemplateOpt
 
 	res := make(map[string][]byte)
 	for _, secretPath := range secretPaths {
-		// fmt.Println("ASDFSADF", secretPath, convertSecretPath(secretPath, octx.PlanDir.Subplan()))
+		// fmt.Println("planDir opening", secretPath, convertSecretPath(secretPath, octx.PlanDir.Subplan()))
 		f, err := octx.PlanDir.Open(secretPath)
 		if err != nil {
+			panic(err)
 			return nil, err
 		}
 		defer f.Close()
@@ -282,11 +283,11 @@ func executeTemplate(octx operator.Context, p string, dest string, destIdx int, 
 		Dest:    dest,
 		DestIdx: destIdx,
 	}
-	// fmt.Printf("template %s -> %s\n", p, dest)
 	resolved, err := resolveTemplatePath(octx, p)
 	if err != nil {
 		return nil, err
 	}
+	// fmt.Printf("template %s (resolved: %s) -> %s\n", p, resolved, dest)
 	if err := octx.Templates.ExecuteForOp(buf, resolved, data); err != nil {
 		return nil, err
 	}
