@@ -11,6 +11,7 @@ require (
 	github.com/imdario/mergo v0.3.12 // indirect
 	github.com/mattn/go-isatty v0.0.13
 	github.com/mitchellh/copystructure v1.2.0 // indirect
+	github.com/mitchellh/mapstructure v1.4.1
 	github.com/otiai10/copy v1.6.0
 	github.com/sergi/go-diff v1.2.0
 	github.com/spf13/cobra v1.2.1

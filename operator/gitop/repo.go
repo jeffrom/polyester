@@ -13,15 +13,14 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/jeffrom/polyester/operator"
-	"github.com/jeffrom/polyester/operator/fileop"
-	"github.com/jeffrom/polyester/operator/opfs"
 	"github.com/jeffrom/polyester/state"
 )
 
 type RepoOpts struct {
-	URL  string `json:"url"`
-	Dest string `json:"dest"`
-	Ref  string `json:"ref,omitempty"`
+	URL     string `json:"url"`
+	Dest    string `json:"dest"`
+	Ref     string `json:"ref,omitempty"`
+	Version string `json:"version,omitempty"`
 }
 
 type Repo struct {
@@ -36,7 +35,8 @@ func (op Repo) Info() operator.Info {
 	}
 
 	flags := cmd.Flags()
-	flags.StringVar(&opts.Ref, "ref", "", "the ref to use (default: HEAD)")
+	flags.StringVar(&opts.Ref, "ref", "", "the tracking ref to use (default: HEAD)")
+	flags.StringVar(&opts.Version, "version", "", "The release version for the repository")
 
 	return &operator.InfoData{
 		OpName: "git-repo",
@@ -58,18 +58,18 @@ func (op Repo) GetState(octx operator.Context) (state.State, error) {
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return st, err
 	}
-	headSum, err := fileop.Checksum(octx.FS.Join(headPath))
-	if err != nil && !errors.Is(err, os.ErrNotExist) {
-		return st, err
-	}
+	// headSum, err := fileop.Checksum(octx.FS.Join(headPath))
+	// if err != nil && !errors.Is(err, os.ErrNotExist) {
+	// 	return st, err
+	// }
 
-	st = st.Append(state.Entry{
-		Name: headPath,
-		File: &opfs.StateFileEntry{
-			Info:   headInfo,
-			SHA256: headSum,
-		},
-	})
+	// st = st.Append(state.Entry{
+	// 	Name: headPath,
+	// 	File: &opfs.StateFileEntry{
+	// 		Info:   headInfo,
+	// 		SHA256: headSum,
+	// 	},
+	// })
 
 	if headInfo == nil {
 		return st, nil
@@ -81,11 +81,12 @@ func (op Repo) GetState(octx operator.Context) (state.State, error) {
 	}
 	ref := getHeadRef(b)
 	if ref == "" {
+		// TODO could try falling back to git cli here
 		panic("failed to get ref from .git/HEAD: " + string(b))
 	}
 
 	currRefPath := filepath.Join(opts.Dest, ".git", ref)
-	currRefInfo, err := octx.FS.Stat(currRefPath)
+	_, err = octx.FS.Stat(currRefPath)
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return st, err
 	}
@@ -94,18 +95,15 @@ func (op Repo) GetState(octx operator.Context) (state.State, error) {
 		return st, err
 	}
 
-	st = st.Append(state.Entry{
-		Name: currRefPath,
-		File: &opfs.StateFileEntry{
-			Info:     currRefInfo,
-			Contents: currRef,
-		},
-	})
+	currRefStr := string(bytes.TrimSpace(currRef))
+	gitst := &gitState{
+		LocalID: currRefStr,
+		Version: opts.Version,
+	}
 
-	// TODO rework this to handle commit/tag v branch ref
-	// TODO when the repo url changes, don't compare the prev state because it
-	// doesn't matter what the HEAD of the old remote is anymore
-	if opts.Ref == "" || opts.Ref == "HEAD" {
+	if opts.Ref == "" || opts.Ref == "HEAD" ||
+		(opts.Version != "" && opts.Version != currRefStr) {
+
 		cmd := exec.CommandContext(octx.Context, "git", "fetch", "-v")
 		cmd.Dir = octx.FS.Join(opts.Dest)
 		if isatty.IsTerminal(os.Stdout.Fd()) {
@@ -129,12 +127,11 @@ func (op Repo) GetState(octx operator.Context) (state.State, error) {
 		}
 
 		remoteHead := strings.TrimSpace(outb.String())
-		st = st.Append(state.Entry{
-			Name: "remote",
-			KV:   map[string]interface{}{"HEAD": remoteHead},
-		})
+		gitst.RemoteHeadID = remoteHead
 	}
-	return st, nil
+
+	st, err = st.AppendKV("git", gitst)
+	return st, err
 }
 
 func (op Repo) Run(octx operator.Context) error {

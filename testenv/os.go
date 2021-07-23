@@ -72,9 +72,18 @@ func RequireEnv(t testing.TB, envs ...string) {
 	}
 }
 
-func WriteFile(t testing.TB, name string, body string) {
+func WriteFile(t testing.TB, p, body string) {
 	t.Helper()
-	if err := os.WriteFile(name, []byte(body), 0644); err != nil {
+	if err := os.WriteFile(p, []byte(body), 0644); err != nil {
 		t.Fatal("WriteFile:", err)
 	}
+}
+
+func ReadFile(t testing.TB, p string) string {
+	t.Helper()
+	b, err := os.ReadFile(p)
+	if err != nil {
+		t.Fatal("ReadFile failed:", err)
+	}
+	return string(b)
 }

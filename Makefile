@@ -32,7 +32,7 @@ gomodoutdated := $(GOPATH)/bin/go-mod-outdated
 
 all: build doc
 
-build: $(bin)
+build: $(bin) go.mod go.sum
 
 $(bin): $(gofiles)
 	$(GO) build $(GOFLAGS) \

@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/sergi/go-diff/diffmatchpatch"
-
 	"github.com/jeffrom/polyester/compiler"
 	"github.com/jeffrom/polyester/operator"
 	"github.com/jeffrom/polyester/state"
@@ -44,6 +42,9 @@ func (r Result) TextSummary(w io.Writer) error {
 					continue
 				}
 				origOp, err := compiler.GetOperation(opRes.op)
+				if err != nil {
+					return err
+				}
 				var opFmt string
 				if sr, ok := origOp.(fmt.Stringer); ok {
 					opFmt = sr.String()
@@ -55,18 +56,12 @@ func (r Result) TextSummary(w io.Writer) error {
 					opFmt = string(b)
 				}
 
-				ab, err := json.MarshalIndent(opRes.prevState.Entries, "", "  ")
-				if err != nil {
-					return err
-				}
-				bb, err := json.MarshalIndent(opRes.currState.Entries, "", "  ")
-				if err != nil {
+				bw.WriteString(fmt.Sprintf("%s %s -> state change:\n", opRes.Name, opFmt))
+				prevst, currst := opRes.prevState, opRes.currState
+				if err := prevst.Diff(bw, currst); err != nil {
 					return err
 				}
 
-				dmp := diffmatchpatch.New()
-				diffs := dmp.DiffMain(string(ab), string(bb), false)
-				bw.WriteString(fmt.Sprintf("%s %s -> state change:\n%s\n\n", opRes.Name, opFmt, dmp.DiffPrettyText(diffs)))
 				// fmt.Println(plan.Name, opRes.Name, "state diff:", dmp.DiffText2(diffs))
 			}
 		}

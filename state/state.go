@@ -7,6 +7,8 @@ import (
 	"encoding/json"
 	"io"
 	"os"
+
+	"github.com/mitchellh/mapstructure"
 )
 
 type State struct {
@@ -61,6 +63,24 @@ func (s State) WriteTo(w io.Writer) (int64, error) {
 func (s State) Append(next ...Entry) State {
 	entries := append(s.Entries, next...)
 	return State{Entries: entries}
+}
+
+func (s State) AppendKV(name string, val interface{}) (State, error) {
+	res := make(map[string]interface{})
+	d, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{
+		TagName: "json",
+		Result:  &res,
+	})
+	if err != nil {
+		return s, err
+	}
+	if err := d.Decode(val); err != nil {
+		return s, err
+	}
+	return s.Append(Entry{
+		Name: name,
+		KV:   res,
+	}), nil
 }
 
 func (s State) Source() State {
