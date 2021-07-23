@@ -248,8 +248,8 @@ func (r *Planner) executeOperation(octx operator.Context, op operator.Interface,
 		if opts.Dryrun {
 			dryrunLabel = " (dryrun)"
 		}
-		opFmt := op.Info().Name()
-		if sr, ok := op.(fmt.Stringer); ok {
+		opFmt := origOp.Info().Name()
+		if sr, ok := origOp.(fmt.Stringer); ok {
 			opFmt += " " + sr.String()
 		}
 		fmt.Printf("-> execute %s%s (%+v)\n", opFmt, dryrunLabel, data.Command.Target)
