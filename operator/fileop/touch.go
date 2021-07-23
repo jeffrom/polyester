@@ -25,7 +25,11 @@ type Touch struct {
 
 func (op Touch) String() string {
 	opts := op.Args.(*TouchOpts)
-	return fmt.Sprintf("(Mode: %s, Path: %s)", fs.FileMode(opts.Mode), opts.Path)
+	return fmt.Sprintf("%s%s%s",
+		ModeLabel(fs.FileMode(opts.Mode)),
+		padArg(opts.Mode != 0),
+		opts.Path,
+	)
 }
 
 func (op Touch) Info() operator.Info {

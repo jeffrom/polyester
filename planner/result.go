@@ -8,6 +8,7 @@ import (
 
 	"github.com/jeffrom/polyester/compiler"
 	"github.com/jeffrom/polyester/operator"
+	"github.com/jeffrom/polyester/planner/format"
 	"github.com/jeffrom/polyester/state"
 )
 
@@ -27,6 +28,9 @@ func (r Result) Changed() bool {
 func (r Result) TextSummary(w io.Writer) error {
 	bw := bufio.NewWriter(w)
 	bw.WriteString(fmt.Sprintf("%d plan(s):\n", len(r.Plans)))
+	if err := r.writeStateChanges(bw); err != nil {
+		return err
+	}
 	for _, plan := range r.Plans {
 		// bw.WriteString("---\n")
 		label := "dirty"
@@ -67,6 +71,83 @@ func (r Result) TextSummary(w io.Writer) error {
 		}
 	}
 	return bw.Flush()
+}
+
+func (r Result) writeStateChanges(bw *bufio.Writer) error {
+	planChanges := 0
+	for _, plan := range r.Plans {
+		for _, opRes := range plan.Operations {
+			if opRes.Changed {
+				planChanges++
+				break
+			}
+		}
+	}
+	if planChanges == 0 {
+		return nil
+	}
+
+	bw.WriteString(fmt.Sprintf("state changes for %d plan(s):\n", planChanges))
+
+	tw := format.NewTabWriter(bw)
+	format.WriteTabHeader(tw,
+		"PLAN",
+		"OPERATION",
+		"EMPTY",
+		"PREV",
+		"FINAL",
+		"ARGUMENTS",
+	)
+	for _, plan := range r.Plans {
+		for _, opRes := range plan.Operations {
+			if !opRes.Changed {
+				continue
+			}
+			origOp, err := compiler.GetOperation(opRes.op)
+			if err != nil {
+				return err
+			}
+			var chgfn func(a, b state.State) (bool, error)
+			if cop, ok := origOp.(operator.ChangeDetector); ok {
+				chgfn = cop.Changed
+			} else {
+				chgfn = func(a, b state.State) (bool, error) { return a.Changed(b), nil }
+			}
+
+			prevCurrChanged, err := chgfn(opRes.prevState, opRes.currState)
+			if err != nil {
+				return err
+			}
+			prevFinalChanged, err := chgfn(opRes.prevState, opRes.finalState)
+			if err != nil {
+				return err
+			}
+
+			var opFmt string
+			if sr, ok := origOp.(fmt.Stringer); ok {
+				opFmt = sr.String()
+			} else {
+				b, err := json.Marshal(origOp.Info().Data().Command.Target)
+				if err != nil {
+					return err
+				}
+				opFmt = string(b)
+			}
+			format.WriteTabRow(tw,
+				plan.Name,
+				opRes.Name,
+				format.Bool(opRes.prevState.Empty()),
+				format.Bool(prevCurrChanged),
+				format.Bool(prevFinalChanged),
+				opFmt,
+			)
+		}
+	}
+	return tw.Flush()
+}
+
+func (r Result) writeChangeTable(bw *bufio.Writer) error {
+	return nil
 }
 
 type PlanResult struct {

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 
@@ -24,7 +25,11 @@ type Mkdir struct {
 
 func (op Mkdir) String() string {
 	opts := op.Args.(*MkdirOpts)
-	return fmt.Sprintf("(Mode: %s, Dests: %v)", fs.FileMode(opts.Mode), opts.Dests)
+	return fmt.Sprintf("%s%s%s",
+		ModeLabel(fs.FileMode(opts.Mode)),
+		padArg(opts.Mode != 0),
+		strings.Join(opts.Dests, " "),
+	)
 }
 
 func (op Mkdir) Info() operator.Info {

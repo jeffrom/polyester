@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/otiai10/copy"
@@ -23,6 +24,16 @@ type AtomicCopyOpts struct {
 
 type AtomicCopy struct {
 	Args interface{}
+}
+
+func (op AtomicCopy) String() string {
+	opts := op.Args.(*AtomicCopyOpts)
+
+	return fmt.Sprintf("%s%s%s",
+		strings.Join(opts.Sources, " "),
+		padArg(true),
+		opts.Dest,
+	)
 }
 
 func (op AtomicCopy) Info() operator.Info {

@@ -248,3 +248,17 @@ func copyManyFiles(ofs operator.FS, sources []string, destDir string) error {
 
 	return nil
 }
+
+func padArg(b bool) string {
+	if b {
+		return "  "
+	}
+	return ""
+}
+
+func ModeLabel(mode fs.FileMode) string {
+	if mode == 0 {
+		return ""
+	}
+	return fmt.Sprintf("(mode: %s)", mode)
+}
