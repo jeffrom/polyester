@@ -64,6 +64,9 @@ func Operators() []operator.Interface {
 }
 
 func GetOperation(op operator.Interface) (operator.Interface, error) {
+	if _, ok := op.(operation); !ok {
+		return op, nil
+	}
 	next := allOps[op.Info().Name()]()
 	nextData := next.Info().Data()
 	if op.Info().Data().Command.Target == nil {

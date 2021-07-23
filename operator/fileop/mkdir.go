@@ -2,6 +2,7 @@ package fileop
 
 import (
 	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 
@@ -19,6 +20,11 @@ type MkdirOpts struct {
 
 type Mkdir struct {
 	Args interface{}
+}
+
+func (op Mkdir) String() string {
+	opts := op.Args.(*MkdirOpts)
+	return fmt.Sprintf("(Mode: %s, Dests: %v)", fs.FileMode(opts.Mode), opts.Dests)
 }
 
 func (op Mkdir) Info() operator.Info {

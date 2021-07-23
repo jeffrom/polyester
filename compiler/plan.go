@@ -48,12 +48,24 @@ func (p Plan) TextSummary(w io.Writer, prevs, currs []state.State) error {
 				chgLabel = "X"
 			}
 		}
-		b, err := json.Marshal(op.Info().Data().Command.Target)
+
+		origOp, err := GetOperation(op)
 		if err != nil {
 			return err
 		}
+
+		var opFmt string
+		if sr, ok := origOp.(fmt.Stringer); ok {
+			opFmt = sr.String()
+		} else {
+			b, err := json.Marshal(op.Info().Data().Command.Target)
+			if err != nil {
+				return err
+			}
+			opFmt = string(b)
+		}
 		// TODO would be nice to know here if operations changed since the last run
-		fmt.Fprintf(bw, "%3d) %20s: [ %1s ] %s\n", n, op.Info().Name(), chgLabel, string(b))
+		fmt.Fprintf(bw, "%3d) %20s: [ %1s ] %s\n", n, op.Info().Name(), chgLabel, opFmt)
 	}
 	return bw.Flush()
 }

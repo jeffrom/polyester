@@ -2,6 +2,7 @@ package fileop
 
 import (
 	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -20,6 +21,11 @@ type TouchOpts struct {
 
 type Touch struct {
 	Args interface{}
+}
+
+func (op Touch) String() string {
+	opts := op.Args.(*TouchOpts)
+	return fmt.Sprintf("(Mode: %s, Path: %s)", fs.FileMode(opts.Mode), opts.Path)
 }
 
 func (op Touch) Info() operator.Info {
