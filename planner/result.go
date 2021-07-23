@@ -6,8 +6,11 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/jeffrom/polyester/state"
 	"github.com/sergi/go-diff/diffmatchpatch"
+
+	"github.com/jeffrom/polyester/compiler"
+	"github.com/jeffrom/polyester/operator"
+	"github.com/jeffrom/polyester/state"
 )
 
 type Result struct {
@@ -40,6 +43,17 @@ func (r Result) TextSummary(w io.Writer) error {
 				if !opRes.Changed {
 					continue
 				}
+				origOp, err := compiler.GetOperation(opRes.op)
+				var opFmt string
+				if sr, ok := origOp.(fmt.Stringer); ok {
+					opFmt = sr.String()
+				} else {
+					b, err := json.Marshal(origOp.Info().Data().Command.Target)
+					if err != nil {
+						return err
+					}
+					opFmt = string(b)
+				}
 
 				ab, err := json.MarshalIndent(opRes.prevState.Entries, "", "  ")
 				if err != nil {
@@ -52,7 +66,7 @@ func (r Result) TextSummary(w io.Writer) error {
 
 				dmp := diffmatchpatch.New()
 				diffs := dmp.DiffMain(string(ab), string(bb), false)
-				bw.WriteString(fmt.Sprintf("%s -> state change:\n%s\n\n", opRes.Name, dmp.DiffPrettyText(diffs)))
+				bw.WriteString(fmt.Sprintf("%s %s -> state change:\n%s\n\n", opRes.Name, opFmt, dmp.DiffPrettyText(diffs)))
 				// fmt.Println(plan.Name, opRes.Name, "state diff:", dmp.DiffText2(diffs))
 			}
 		}
@@ -73,6 +87,7 @@ type OperationResult struct {
 	PrevEmpty bool   `json:"prev_empty"`
 	Executed  bool   `json:"executed"`
 
+	op         operator.Interface
 	prevState  state.State
 	currState  state.State
 	finalState state.State

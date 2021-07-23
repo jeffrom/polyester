@@ -63,13 +63,13 @@ func (op Mkdir) GetState(octx operator.Context) (state.State, error) {
 			return st, err
 		}
 		// fmt.Printf("info %s: %+v\n", dest, info.IsDir())
-		st = st.Append(state.Entry{
+		ent := state.Entry{
 			Name: dest,
 			File: &opfs.StateFileEntry{
 				Info: info,
-				// ZeroTime: true,
 			},
-		})
+		}
+		st = st.Append(ent.WithoutTimestamps())
 	}
 	return st, nil
 }

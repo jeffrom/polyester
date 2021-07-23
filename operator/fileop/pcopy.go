@@ -58,14 +58,15 @@ func (op Pcopy) GetState(octx operator.Context) (state.State, error) {
 	}
 
 	st, err = getStateFileGlobs(octx.FS, state.State{}, opts.Dest, sources, opts.ExcludeGlobs)
+	st = st.Map(func(e state.Entry) state.Entry { return e.WithoutTimestamps() })
 	return st, err
 	// st.WriteTo(os.Stdout)
 }
 
-func (op Pcopy) Changed(a, b state.State) (bool, error) {
-	fn := func(e state.Entry) state.Entry { return e.WithoutTimestamps() }
-	return a.Map(fn).Changed(b.Map(fn)), nil
-}
+// func (op Pcopy) Changed(a, b state.State) (bool, error) {
+// 	fn := func(e state.Entry) state.Entry { return e.WithoutTimestamps() }
+// 	return a.Map(fn).Changed(b.Map(fn)), nil
+// }
 
 func (op Pcopy) Run(octx operator.Context) error {
 	opts := op.Args.(*PcopyOpts)

@@ -285,6 +285,7 @@ func (r *Planner) executeOperation(octx operator.Context, op operator.Interface,
 
 	// fmt.Printf("%25s: [empty: %8v] [changed: %8v] [dirty: %8v]\n", op.Info().Name(), prevSrcSt.Empty(), changed, dirty)
 	formatOpComplete(os.Stdout, op.Info().Name(), prevSrcSt.Empty(), changed, dirty, executed)
+	res.op = op
 	res.Name = op.Info().Name()
 	res.PrevEmpty = prevEmpty
 	res.Changed = changed
