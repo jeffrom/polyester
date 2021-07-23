@@ -35,6 +35,7 @@ func (r Result) TextSummary(w io.Writer) error {
 		bw.WriteString(fmt.Sprintf("%20s(%d): %s\n", plan.Name, len(plan.Operations), label))
 
 		if plan.Changed {
+			bw.WriteString(fmt.Sprintf("plan %s changed:\n", plan.Name))
 			for _, opRes := range plan.Operations {
 				if !opRes.Changed {
 					continue
@@ -51,7 +52,8 @@ func (r Result) TextSummary(w io.Writer) error {
 
 				dmp := diffmatchpatch.New()
 				diffs := dmp.DiffMain(string(ab), string(bb), false)
-				fmt.Println(plan.Name, opRes.Name, "state diff:", dmp.DiffText2(diffs))
+				bw.WriteString(fmt.Sprintf("%s -> state change:\n%s\n\n", opRes.Name, dmp.DiffPrettyText(diffs)))
+				// fmt.Println(plan.Name, opRes.Name, "state diff:", dmp.DiffText2(diffs))
 			}
 		}
 	}
