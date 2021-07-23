@@ -1,6 +1,8 @@
 package fileop
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 
 	"github.com/jeffrom/polyester/operator"
@@ -82,6 +84,7 @@ func (op Pcopy) Run(octx operator.Context) error {
 	for i, file := range sources {
 		joinedFiles[i] = octx.PlanDir.Join(file)
 	}
+	fmt.Println("copyOneOrManyFiles to:", opts.Dest, octx.FS.Join(opts.Dest))
 	return copyOneOrManyFiles(octx.PlanDir, octx.FS.Join(opts.Dest), joinedFiles)
 }
 
