@@ -5,9 +5,7 @@ import (
 	"errors"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"regexp"
-	"strings"
 
 	"github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"
@@ -53,49 +51,10 @@ func (op Repo) GetState(octx operator.Context) (state.State, error) {
 	st := state.State{}
 	// fmt.Printf("git-repo: GetState opts: %+v\n", opts)
 
-	headPath := filepath.Join(opts.Dest, ".git", "HEAD")
-	headInfo, err := octx.FS.Stat(headPath)
-	if err != nil && !errors.Is(err, os.ErrNotExist) {
+	currRefStr, ref, err := getCurrentCommit(octx, opts.Dest)
+	if err != nil || currRefStr == "" {
 		return st, err
 	}
-	// headSum, err := fileop.Checksum(octx.FS.Join(headPath))
-	// if err != nil && !errors.Is(err, os.ErrNotExist) {
-	// 	return st, err
-	// }
-
-	// st = st.Append(state.Entry{
-	// 	Name: headPath,
-	// 	File: &opfs.StateFileEntry{
-	// 		Info:   headInfo,
-	// 		SHA256: headSum,
-	// 	},
-	// })
-
-	if headInfo == nil {
-		return st, nil
-	}
-
-	b, err := octx.FS.ReadFile(headPath)
-	if err != nil {
-		return st, err
-	}
-	ref := getHeadRef(b)
-	if ref == "" {
-		// TODO could try falling back to git cli here
-		panic("failed to get ref from .git/HEAD: " + string(b))
-	}
-
-	currRefPath := filepath.Join(opts.Dest, ".git", ref)
-	_, err = octx.FS.Stat(currRefPath)
-	if err != nil && !errors.Is(err, os.ErrNotExist) {
-		return st, err
-	}
-	currRef, err := octx.FS.ReadFile(currRefPath)
-	if err != nil && !errors.Is(err, os.ErrNotExist) {
-		return st, err
-	}
-
-	currRefStr := string(bytes.TrimSpace(currRef))
 	gitst := &gitState{
 		LocalID: currRefStr,
 		Version: opts.Version,
@@ -116,17 +75,10 @@ func (op Repo) GetState(octx operator.Context) (state.State, error) {
 			return st, err
 		}
 
-		_, refName := filepath.Split(ref)
-		cmd = exec.CommandContext(octx.Context, "git", "rev-parse", "origin/"+refName)
-		cmd.Dir = octx.FS.Join(opts.Dest)
-		outb := &bytes.Buffer{}
-		cmd.Stderr = os.Stderr
-		cmd.Stdout = outb
-		if err := cmd.Run(); err != nil {
+		remoteHead, err := getLatestCommit(octx, octx.FS.Join(opts.Dest), ref)
+		if err != nil {
 			return st, err
 		}
-
-		remoteHead := strings.TrimSpace(outb.String())
 		gitst.RemoteHeadID = remoteHead
 	}
 
