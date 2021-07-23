@@ -53,17 +53,17 @@ func (pd fsPlanDir) cleanPath(name string) string {
 	// return filepath.Join(pd.dir, name)
 }
 
-func (pd fsPlanDir) checkPath(name string) error {
+func (pd fsPlanDir) checkPath(op, name string) error {
 	if filepath.IsAbs(name) {
 		if !strings.HasPrefix(filepath.Clean(name), filepath.Clean(pd.dir)) {
-			return &fs.PathError{Op: "plandir-open", Path: name, Err: fs.ErrInvalid}
+			return &fs.PathError{Op: fmt.Sprint("plandir-%s", op), Path: name, Err: fs.ErrInvalid}
 		}
 	}
 	return nil
 }
 
 func (pd fsPlanDir) Open(name string) (fs.File, error) {
-	// if err := pd.checkPath(name); err != nil {
+	// if err := pd.checkPath("open", name); err != nil {
 	// 	return nil, err
 	// }
 	if filepath.IsAbs(name) {
@@ -75,7 +75,7 @@ func (pd fsPlanDir) Open(name string) (fs.File, error) {
 }
 
 func (pd fsPlanDir) Stat(name string) (fs.FileInfo, error) {
-	if err := pd.checkPath(name); err != nil {
+	if err := pd.checkPath("stat", name); err != nil {
 		return nil, err
 	}
 	if filepath.IsAbs(name) {
@@ -86,7 +86,7 @@ func (pd fsPlanDir) Stat(name string) (fs.FileInfo, error) {
 }
 
 func (pd fsPlanDir) ReadDir(name string) ([]fs.DirEntry, error) {
-	if err := pd.checkPath(name); err != nil {
+	if err := pd.checkPath("read-dir", name); err != nil {
 		return nil, err
 	}
 	if filepath.IsAbs(name) {
@@ -97,7 +97,7 @@ func (pd fsPlanDir) ReadDir(name string) ([]fs.DirEntry, error) {
 }
 
 func (pd fsPlanDir) ReadFile(name string) ([]byte, error) {
-	if err := pd.checkPath(name); err != nil {
+	if err := pd.checkPath("read-file", name); err != nil {
 		return nil, err
 	}
 	if filepath.IsAbs(name) {
@@ -108,7 +108,7 @@ func (pd fsPlanDir) ReadFile(name string) ([]byte, error) {
 }
 
 func (pd fsPlanDir) Glob(pattern string) ([]string, error) {
-	if err := pd.checkPath(pattern); err != nil {
+	if err := pd.checkPath("glob", pattern); err != nil {
 		return nil, err
 	}
 	return doublestar.Glob(pd, pattern)
@@ -116,7 +116,7 @@ func (pd fsPlanDir) Glob(pattern string) ([]string, error) {
 
 func (pd fsPlanDir) Join(paths ...string) string {
 	joined := filepath.Join(paths...)
-	if err := pd.checkPath(joined); err != nil {
+	if err := pd.checkPath("join", joined); err != nil {
 		panic(err)
 	}
 	if filepath.IsAbs(joined) {
