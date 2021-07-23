@@ -56,7 +56,7 @@ func (pd fsPlanDir) cleanPath(name string) string {
 func (pd fsPlanDir) checkPath(op, name string) error {
 	if filepath.IsAbs(name) {
 		if !strings.HasPrefix(filepath.Clean(name), filepath.Clean(pd.dir)) {
-			return &fs.PathError{Op: fmt.Sprint("plandir-%s", op), Path: name, Err: fs.ErrInvalid}
+			return &fs.PathError{Op: fmt.Sprintf("plandir-%s", op), Path: name, Err: fs.ErrInvalid}
 		}
 	}
 	return nil
