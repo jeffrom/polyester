@@ -71,3 +71,10 @@ func RequireEnv(t testing.TB, envs ...string) {
 		}
 	}
 }
+
+func WriteFile(t testing.TB, name string, body string) {
+	t.Helper()
+	if err := os.WriteFile(name, []byte(body), 0644); err != nil {
+		t.Fatal("WriteFile:", err)
+	}
+}

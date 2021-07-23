@@ -12,6 +12,15 @@ type Result struct {
 	Plans []*PlanResult `json:"plans"`
 }
 
+func (r Result) Changed() bool {
+	for _, pl := range r.Plans {
+		if pl.Changed {
+			return true
+		}
+	}
+	return false
+}
+
 func (r Result) TextSummary(w io.Writer) error {
 	bw := bufio.NewWriter(w)
 	bw.WriteString(fmt.Sprintf("%d plan(s):\n", len(r.Plans)))
