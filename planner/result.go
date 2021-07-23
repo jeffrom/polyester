@@ -2,10 +2,12 @@ package planner
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"io"
 
 	"github.com/jeffrom/polyester/state"
+	"github.com/sergi/go-diff/diffmatchpatch"
 )
 
 type Result struct {
@@ -31,6 +33,27 @@ func (r Result) TextSummary(w io.Writer) error {
 			label = "clean"
 		}
 		bw.WriteString(fmt.Sprintf("%20s(%d): %s\n", plan.Name, len(plan.Operations), label))
+
+		if plan.Changed {
+			for _, opRes := range plan.Operations {
+				if !opRes.Changed {
+					continue
+				}
+
+				ab, err := json.MarshalIndent(opRes.prevState.Entries, "", "  ")
+				if err != nil {
+					return err
+				}
+				bb, err := json.MarshalIndent(opRes.currState.Entries, "", "  ")
+				if err != nil {
+					return err
+				}
+
+				dmp := diffmatchpatch.New()
+				diffs := dmp.DiffMain(string(ab), string(bb), false)
+				fmt.Println(plan.Name, opRes.Name, "state diff:", dmp.DiffText2(diffs))
+			}
+		}
 	}
 	return bw.Flush()
 }
@@ -42,12 +65,13 @@ type PlanResult struct {
 }
 
 type OperationResult struct {
-	Dirty     bool `json:"dirty"`
-	Changed   bool `json:"changed"`
-	PrevEmpty bool `json:"prev_empty"`
-	Executed  bool `json:"executed"`
+	Name      string `json:"name"`
+	Dirty     bool   `json:"dirty"`
+	Changed   bool   `json:"changed"`
+	PrevEmpty bool   `json:"prev_empty"`
+	Executed  bool   `json:"executed"`
 
-	prevState state.State
-	currState state.State
-	nextState state.State
+	prevState  state.State
+	currState  state.State
+	finalState state.State
 }

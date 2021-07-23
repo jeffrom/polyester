@@ -12,6 +12,7 @@ require (
 	github.com/mattn/go-isatty v0.0.13
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/otiai10/copy v1.6.0
+	github.com/sergi/go-diff v1.2.0
 	github.com/spf13/cobra v1.2.1
 	github.com/zcalusic/sysinfo v0.0.0-20210609180555-aff387a52b3a
 	mvdan.cc/sh/v3 v3.3.0

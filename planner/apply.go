@@ -260,17 +260,17 @@ func (r *Planner) executeOperation(octx operator.Context, op operator.Interface,
 				return nil, err
 			}
 
-			nextSt, err := op.GetState(octx.WithGotState(true))
+			finalSt, err := op.GetState(octx.WithGotState(true))
 			if err != nil {
 				return nil, err
 			}
-			res.nextState = nextSt
+			res.finalState = finalSt
 
-			if err := saveState(data, nextSt, stateDir); err != nil {
+			if err := saveState(data, finalSt, stateDir); err != nil {
 				return nil, err
 			}
 
-			targetSt := nextSt.Target()
+			targetSt := finalSt.Target()
 			// fmt.Println("ASDF")
 			// targetSt.WriteTo(os.Stdout)
 			// fmt.Println("\n", targetSt.Changed(prevst.Target()))
@@ -285,6 +285,7 @@ func (r *Planner) executeOperation(octx operator.Context, op operator.Interface,
 
 	// fmt.Printf("%25s: [empty: %8v] [changed: %8v] [dirty: %8v]\n", op.Info().Name(), prevSrcSt.Empty(), changed, dirty)
 	formatOpComplete(os.Stdout, op.Info().Name(), prevSrcSt.Empty(), changed, dirty, executed)
+	res.Name = op.Info().Name()
 	res.PrevEmpty = prevEmpty
 	res.Changed = changed
 	res.Dirty = dirty
