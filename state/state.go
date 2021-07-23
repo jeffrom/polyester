@@ -50,7 +50,7 @@ func (s State) WriteFile(p string) error {
 
 func (s State) WriteTo(w io.Writer) (int64, error) {
 	bw := bufio.NewWriter(w)
-	b, err := json.Marshal(s)
+	b, err := json.MarshalIndent(s, "", "  ")
 	if err != nil {
 		return 0, err
 	}
