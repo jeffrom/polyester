@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -86,6 +87,10 @@ func (c *Compiler) execOne(ctx context.Context, im *intermediatePlan, name strin
 }
 
 func addSelfPathToEnviron(environ []string) (string, []string, error) {
+	testbin := os.Getenv("TESTBIN")
+	if _, err := exec.LookPath("polyester"); testbin == "" && err == nil {
+		return "", environ, nil
+	}
 	// make sure we're using the current polyester binary for compilation
 	abs, err := filepath.Abs(os.Args[0])
 	if err != nil {
