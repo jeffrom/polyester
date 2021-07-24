@@ -45,14 +45,14 @@ func (psh *Parser) ConvertShellOp() ([]byte, error) {
 
 		if magicDone {
 			magicMode = false
-			write([]byte("\"; "))
+			write([]byte("EOF\n)\"; "))
 		}
 
 		if isMagic {
 			next := copySlice(psh.raw[off:end])
 			next = bytes.TrimRight(next, " \n")
 			write(next)
-			write([]byte(" \""))
+			write([]byte(" \"$(cat <<EOF\n"))
 			magicMode = true
 		} else {
 			write(psh.raw[off:end])
@@ -63,14 +63,12 @@ func (psh *Parser) ConvertShellOp() ([]byte, error) {
 		write(buf)
 	}
 	if magicMode {
-		write([]byte("\"\n"))
+		write([]byte("EOF\n)\"\n"))
 	}
 
 	// b := bytes.Join(res, nil)
 	b := buf.Bytes()
-	// fmt.Println()
-	// fmt.Println()
-	// fmt.Printf("result: ---\n%s\n---\n", string(b))
+	// fmt.Printf("\n\nresult: ---\n%s\n---\n", string(b))
 	return b, nil
 }
 
