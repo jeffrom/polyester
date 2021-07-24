@@ -76,7 +76,6 @@ func getLatestCommit(octx operator.Context, repoDir, ref string) (string, error)
 var remoteHeadRE = regexp.MustCompile(`HEAD branch: (.*)`)
 
 func getRemoteDefaultBranch(octx operator.Context, repoDir string) (string, error) {
-	fmt.Println("SADF", repoDir)
 	cmd := exec.CommandContext(octx.Context, "git", "remote", "show", "origin")
 	fmt.Println("+", cmd.Args)
 	cmd.Dir = repoDir
