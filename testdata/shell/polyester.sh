@@ -20,3 +20,11 @@ grep c c || { echo c > c; }
 
 # 7
 echo nice
+
+P sh --dir $testdir --target d
+grep c c || { echo c > c; }
+
+echo "$(cat <<EOF
+dddnice
+EOF
+)"
