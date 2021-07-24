@@ -31,6 +31,7 @@ Copy files, resolving paths from the plan directory.
 	}
 	flags := cmd.Flags()
 	flags.StringArrayVar(&opts.ExcludeGlobs, "exclude", nil, "`glob`s to exclude from destination")
+	// TODO mode
 
 	return &operator.InfoData{
 		OpName: "pcopy",
