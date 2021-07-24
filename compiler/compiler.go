@@ -58,7 +58,11 @@ func (c *Compiler) Compile(ctx context.Context, m *manifest.Manifest) (*Plan, er
 }
 
 func (c *Compiler) execOne(ctx context.Context, im *intermediatePlan, name string, b []byte) error {
-	script := string(annotatePlanScript(b, c.selfFile))
+	annotated, err := annotatePlanScript(b, c.selfFile)
+	if err != nil {
+		return err
+	}
+	script := string(annotated)
 	// TODO statically validate script here
 
 	r, w, err := os.Pipe()

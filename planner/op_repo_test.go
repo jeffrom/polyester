@@ -67,6 +67,7 @@ func doApply(ctx context.Context, t testing.TB, pl *Planner, opts ApplyOpts, exp
 	}
 	if res == nil {
 		t.Fatal("expected apply result not to be nil")
+		return nil
 	}
 
 	changed := res.Changed()

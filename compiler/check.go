@@ -8,8 +8,8 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/jeffrom/polyester/compiler/shell"
 	"github.com/jeffrom/polyester/operator"
-	"github.com/jeffrom/polyester/planner/shell"
 )
 
 // TODO multiple validation errors

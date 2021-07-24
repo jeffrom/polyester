@@ -24,7 +24,8 @@ type ShellOpts struct {
 }
 
 type Shell struct {
-	Args interface{}
+	Args           interface{}
+	NoValidateArgs bool
 }
 
 func (op Shell) Info() operator.Info {
@@ -32,8 +33,14 @@ func (op Shell) Info() operator.Info {
 
 	cmd := &cobra.Command{
 		Use:   "sh script",
-		Args:  cobra.ExactArgs(1),
 		Short: "executes a shell script",
+	}
+	if !op.NoValidateArgs {
+		cmd.Args = cobra.ExactArgs(1)
+	}
+	// allow 0 args in declaration mode for shell magic
+	if env := os.Getenv("_POLY_PLAN"); env != "" {
+		cmd.Args = cobra.RangeArgs(0, 1)
 	}
 	flags := cmd.Flags()
 	flags.StringVar(&opts.Dir, "dir", "", "the directory to run the script in")
@@ -152,7 +159,9 @@ func (op Shell) Run(octx operator.Context) error {
 
 func shellArgs(cmd *cobra.Command, args []string, target interface{}) error {
 	t := target.(*ShellOpts)
-	t.Script = args[0]
+	if len(args) > 0 {
+		t.Script = args[0]
+	}
 	return nil
 }
 

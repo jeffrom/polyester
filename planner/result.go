@@ -146,9 +146,9 @@ func (r Result) writeStateChanges(bw *bufio.Writer) error {
 	return tw.Flush()
 }
 
-func (r Result) writeChangeTable(bw *bufio.Writer) error {
-	return nil
-}
+// func (r Result) writeChangeTable(bw *bufio.Writer) error {
+// 	return nil
+// }
 
 type PlanResult struct {
 	Name       string             `json:"name"`

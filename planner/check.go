@@ -7,10 +7,10 @@ import (
 	"os"
 
 	"github.com/jeffrom/polyester/compiler"
+	"github.com/jeffrom/polyester/compiler/shell"
 	"github.com/jeffrom/polyester/operator"
 	"github.com/jeffrom/polyester/operator/opfs"
 	"github.com/jeffrom/polyester/operator/templates"
-	"github.com/jeffrom/polyester/planner/shell"
 )
 
 func (r *Planner) Check(ctx context.Context) error {

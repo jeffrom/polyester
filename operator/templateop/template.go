@@ -211,7 +211,6 @@ func readSecretData(octx operator.Context, ids []age.Identity, opts *TemplateOpt
 		// fmt.Println("planDir opening", secretPath, convertSecretPath(secretPath, octx.PlanDir.Subplan()))
 		f, err := octx.PlanDir.Open(secretPath)
 		if err != nil {
-			panic(err)
 			return nil, err
 		}
 		defer f.Close()

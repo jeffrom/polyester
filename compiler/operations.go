@@ -63,6 +63,7 @@ func Operators() []operator.Interface {
 	return res
 }
 
+// GetOperation returns the original implementation of an operator's interface.
 func GetOperation(op operator.Interface) (operator.Interface, error) {
 	if _, ok := op.(operation); !ok {
 		return op, nil
