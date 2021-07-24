@@ -3,6 +3,7 @@ package gitop
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"regexp"
@@ -51,7 +52,7 @@ func (op Repo) GetState(octx operator.Context) (state.State, error) {
 	st := state.State{}
 	// fmt.Printf("git-repo: GetState opts: %+v\n", opts)
 
-	currRefStr, ref, err := getCurrentCommit(octx, opts.Dest)
+	currRefStr, ref, err := getCurrentCommit(octx, octx.FS.Join(opts.Dest))
 	if err != nil || currRefStr == "" {
 		return st, err
 	}
@@ -98,6 +99,11 @@ func (op Repo) Run(octx operator.Context) error {
 		destExists = false
 	}
 
+	currRef, ref, err := getCurrentCommit(octx, octx.FS.Join(opts.Dest))
+	if err != nil {
+		return err
+	}
+
 	// already did fetch if the repo existed when GetState ran
 	if !destExists {
 		args := []string{
@@ -106,15 +112,31 @@ func (op Repo) Run(octx operator.Context) error {
 		if opts.Ref != "" {
 			args = append(args, "--branch", opts.Ref)
 		}
-		// fmt.Println("+ git", args)
 		cmd := exec.CommandContext(ctx, "git", args...)
-		if isatty.IsTerminal(os.Stdout.Fd()) {
-			cmd.Stdin = os.Stdin
-		}
+		fmt.Println("+", cmd.Args)
+		cmd.Stdin = os.Stdin
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		if err := cmd.Run(); err != nil {
 			return err
+		}
+	} else if opts.Version != "" && opts.Version != currRef {
+		panic("version not implemented")
+	} else if opts.Ref == "" || opts.Ref == "HEAD" {
+		latestRef, err := getLatestCommit(octx, octx.FS.Join(opts.Dest), ref)
+		if err != nil {
+			return err
+		}
+		if currRef != latestRef {
+			cmd := exec.CommandContext(ctx, "git", "-c", "advice.detachedHead=false", "checkout", latestRef)
+			fmt.Println("+", cmd.Args)
+			cmd.Dir = octx.FS.Join(opts.Dest)
+			cmd.Stdin = os.Stdin
+			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
+			if err := cmd.Run(); err != nil {
+				return err
+			}
 		}
 	}
 
