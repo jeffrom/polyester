@@ -56,7 +56,9 @@ func (op AptInstall) GetState(octx operator.Context) (state.State, error) {
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
-		return st, err
+		if cmd.ProcessState.ExitCode() != 1 {
+			return st, err
+		}
 	}
 
 	sc := bufio.NewScanner(outb)
