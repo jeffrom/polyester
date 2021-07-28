@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/bmatcuk/doublestar/v4"
 	"github.com/otiai10/copy"
 
 	"github.com/jeffrom/polyester/operator"
@@ -206,13 +207,13 @@ func copyOneFile(ofs operator.FS, file, destFile string) error {
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return err
 	}
-	if destInfo != nil && srcInfo.IsDir() != destInfo.IsDir() {
-		return fmt.Errorf("source (%s) and dest (%s) are different types", file, destFile)
-	}
 
 	src := file
 	dest := destFile
-	if srcInfo.IsDir() {
+	if destInfo != nil && destInfo.IsDir() && !srcInfo.IsDir() {
+		_, file := filepath.Split(src)
+		return copyFile(src, filepath.Join(dest, file))
+	} else if srcInfo.IsDir() {
 		if err := copy.Copy(src, dest); err != nil {
 			return err
 		}
@@ -222,6 +223,32 @@ func copyOneFile(ofs operator.FS, file, destFile string) error {
 		}
 	}
 	return nil
+}
+
+func checkPats(allFiles []string, pats []string) error {
+	for _, pat := range pats {
+		match, err := checkPatMatch(allFiles, pat)
+		if err != nil {
+			return err
+		}
+		if !match {
+			return fmt.Errorf("fileop: pattern %q did not match any file(s)", pat)
+		}
+	}
+	return nil
+}
+
+func checkPatMatch(allFiles []string, pat string) (bool, error) {
+	for _, p := range allFiles {
+		m, err := doublestar.PathMatch(pat, p)
+		if err != nil {
+			return false, err
+		}
+		if m {
+			return true, nil
+		}
+	}
+	return false, nil
 }
 
 func copyManyFiles(ofs operator.FS, sources []string, destDir string) error {

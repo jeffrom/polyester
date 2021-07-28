@@ -21,9 +21,10 @@ func (op Copy) Info() operator.Info {
 	opts := op.Args.(*CopyOpts)
 
 	cmd := &cobra.Command{
-		Use:   "copy source... dest",
-		Args:  cobra.MinimumNArgs(2),
-		Short: "copies sources to dest",
+		Use:     "copy source... dest",
+		Aliases: []string{"cp"},
+		Args:    cobra.MinimumNArgs(2),
+		Short:   "copies sources to dest",
 		Long: `Simple file copy.
 
 See atomic-copy for copy semantics.
@@ -54,6 +55,10 @@ func (op Copy) Run(octx operator.Context) error {
 	opts := op.Args.(*CopyOpts)
 	allFiles, err := gatherFilesGlobDirOnly(octx.FS, opts.Sources, opts.ExcludeGlobs)
 	if err != nil {
+		return err
+	}
+
+	if err := checkPats(allFiles, opts.Sources); err != nil {
 		return err
 	}
 

@@ -5,9 +5,9 @@ P plan cool
 
 testdir=/tmp/test/pcopy
 
-polyester mkdir $testdir/f
+P mkdir $testdir/f
 
-polyester pcopy a $testdir/a
-polyester pcopy a d $testdir/f
-polyester pcopy "{b,c}" $testdir/
-# polyester pcopy "plans/cool/h" $testdir/h
+P pcopy a $testdir/a
+P pcopy a d $testdir/f
+P pcopy "{b,c}" $testdir/
+# P pcopy "plans/cool/h" $testdir/h

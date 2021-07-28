@@ -2,6 +2,7 @@ package testenv
 
 import (
 	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -61,6 +62,15 @@ func RemoveOnSuccess(t testing.TB, tmpdir string) {
 		return
 	}
 	logError(t, os.RemoveAll(tmpdir))
+}
+
+func Mkdirs(t testing.TB, mode fs.FileMode, dirs ...string) {
+	t.Helper()
+	for _, dir := range dirs {
+		if err := os.MkdirAll(dir, mode); err != nil {
+			t.Fatal(err)
+		}
+	}
 }
 
 func RequireEnv(t testing.TB, envs ...string) {

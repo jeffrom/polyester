@@ -1,6 +1,8 @@
 package fileop
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 
 	"github.com/jeffrom/polyester/operator"
@@ -77,6 +79,17 @@ func (op Pcopy) Run(octx operator.Context) error {
 	sources, err := octx.PlanDir.Resolve("files", opts.Sources)
 	if err != nil {
 		return err
+	}
+
+	// check that each pattern matches
+	for _, pat := range opts.Sources {
+		sources, err := octx.PlanDir.Resolve("files", []string{pat})
+		if err != nil {
+			return err
+		}
+		if len(sources) == 0 {
+			return fmt.Errorf("pcopy: pattern %q did not match any file(s)", pat)
+		}
 	}
 
 	joinedFiles := make([]string, len(sources))

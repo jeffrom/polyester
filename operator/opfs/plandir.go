@@ -138,9 +138,11 @@ func (pd fsPlanDir) Subplan() string {
 		return ""
 	}
 
-	dir := strings.TrimPrefix(pd.spdir, filepath.Join(pd.dir, "plans")+string(filepath.Separator))
+	dir := strings.TrimPrefix(pd.spdir, filepath.Join(pd.dir, "plans")+string(sep))
 	return dir
 }
+
+const sep = filepath.Separator
 
 // Resolve returns real path to files located in a files/ directory in the plan
 // dir and matching pat (todo secret).
@@ -157,11 +159,11 @@ func (pd fsPlanDir) Resolve(kind string, pats []string) ([]string, error) {
 	// fmt.Println("uhhh", pd.dir, pd.spdir, pats)
 	var res []string
 	for _, pat := range pats {
-		if len(pat) > 0 && pat[0] == filepath.Separator {
+		if len(pat) > 0 && pat[0] == sep {
 			return nil, fmt.Errorf("plandir copy: absolute path disallowed (%s)", pat)
 		}
 		// TODO something unexpected happening here
-		if len(pat) > 1 && pat[0] == '.' && pat[1] == filepath.Separator {
+		if len(pat) > 1 && pat[0] == '.' && pat[1] == sep {
 			pat = filepath.Join(planDir, pat)
 		}
 
@@ -175,8 +177,9 @@ func (pd fsPlanDir) Resolve(kind string, pats []string) ([]string, error) {
 				filepath.Join(planDir, kind, pat),
 			}
 		}
+		// fmt.Println("cands:", cands)
 
-		parts := strings.SplitN(pat, string(filepath.Separator), 3)
+		parts := strings.SplitN(pat, string(sep), 3)
 		if len(parts) == 3 && parts[0] == "plans" {
 			return nil, errors.New("plandir: disallowed relative access to outside plan")
 			// cands = []string{filepath.Join(planDir, "plans", parts[1], kind, parts[2])}
@@ -189,7 +192,7 @@ func (pd fsPlanDir) Resolve(kind string, pats []string) ([]string, error) {
 			// fmt.Println("matches:", err, len(matches), matches)
 			cleaned := make([]string, len(matches))
 			for i, m := range matches {
-				cleaned[i] = strings.TrimPrefix(m, planDir+string(filepath.Separator))
+				cleaned[i] = strings.TrimPrefix(m, planDir+string(sep))
 			}
 			if err == nil && len(cleaned) > 0 {
 				res = append(res, cleaned...)
