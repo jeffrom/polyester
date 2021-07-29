@@ -155,6 +155,7 @@ type PlanResult struct {
 	Operations []*OperationResult `json:"operations"`
 	Changed    bool               `json:"changed"`
 	Error      error              `json:"error"`
+	Plan       *compiler.Plan
 }
 
 type OperationResult struct {
