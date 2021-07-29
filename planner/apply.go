@@ -82,6 +82,7 @@ func (r *Planner) Apply(ctx context.Context, opts ApplyOpts) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	res, err := r.executePlans(ctx, plan, stateDir, tmpl, opts)
 	if err != nil {
 		return nil, err
@@ -116,6 +117,14 @@ func (r *Planner) executePlans(ctx context.Context, plan *compiler.Plan, stateDi
 	}
 
 	octx := operator.NewContext(ctx, opfs.New(dirRoot), opfs.NewPlanDirFS(r.planDir), tmpl)
+	// eopts := execute.Opts{
+	// 	Dryrun:    opts.Dryrun,
+	// 	DirRoot:   opts.DirRoot,
+	// 	StateDir:  stateDir,
+	// // 	Templates: tmpl,
+	// }
+	// return execute.New(plan).Do(octx, eopts)
+
 	finalRes := &Result{}
 	for _, subplan := range all {
 		// fmt.Println("starting executePlan()", subplan.Name)
