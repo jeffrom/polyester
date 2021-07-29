@@ -11,31 +11,43 @@ import (
 
 type execPool struct {
 	workers []*runWorker
+	out     chan *PlanResult
 	n       int64
+	stopC   chan struct{}
+
+	planStartC chan *compiler.Plan
+	planDoneC  chan *PlanResult
 }
 
-func newExecPool(out chan<- *PlanResult, conc int) *execPool {
+func newExecPool(conc int) *execPool {
+	out := make(chan *PlanResult)
 	workers := make([]*runWorker, conc)
 	for i := 0; i < conc; i++ {
 		workers[i] = newRunWorker(out, 0)
 	}
 	return &execPool{
-		workers: workers,
+		out:        out,
+		workers:    workers,
+		stopC:      make(chan struct{}),
+		planStartC: make(chan *compiler.Plan),
+		planDoneC:  make(chan *PlanResult),
 	}
 }
 
 func (ep *execPool) addPlan(plan *compiler.Plan) {
 	for {
+		// try each worker repeatedly
 		for _, wrk := range ep.workers {
 			select {
 			case wrk.in <- plan:
 				atomic.AddInt64(&ep.n, 1)
+				ep.planStartC <- plan
 				return
 			default:
 				continue
 			}
 		}
-		fmt.Println("no available workers found??")
+		fmt.Println("no available workers goroutines found??")
 		time.Sleep(500 * time.Millisecond)
 	}
 }
@@ -48,10 +60,43 @@ func (ep *execPool) start(octx operator.Context, opts Opts) {
 	for _, wrk := range ep.workers {
 		wrk.start(octx, opts)
 	}
+
+	go ep.gathererLoop(octx, opts)
+	go ep.feederLoop(octx, opts)
 }
 
 func (ep *execPool) wait() (*Result, error) {
-	return nil, nil
+	return &Result{}, nil
+}
+
+func (ep *execPool) feederLoop(octx operator.Context, opts Opts) {
+	for {
+		select {
+		case <-octx.Context.Done():
+			return
+		case <-ep.stopC:
+			return
+		case plan := <-ep.planStartC:
+			fmt.Printf("feeder <-plan: %+v\n", plan)
+		case res := <-ep.planDoneC:
+			fmt.Printf("feeder <-res: %+v\n", res)
+		}
+	}
+}
+
+func (ep *execPool) gathererLoop(octx operator.Context, opts Opts) {
+	for {
+		select {
+		case <-octx.Context.Done():
+			return
+		case <-ep.stopC:
+			return
+		case res := <-ep.out:
+			atomic.AddInt64(&ep.n, -1)
+			fmt.Printf("gatherer res: %+v\n", res)
+			ep.planDoneC <- res
+		}
+	}
 }
 
 // runWorker executes plans in a goroutine, one at a time. The goroutine can
