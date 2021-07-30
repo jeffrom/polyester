@@ -3,7 +3,6 @@ package execute
 import (
 	"fmt"
 	"sync/atomic"
-	"time"
 
 	"github.com/jeffrom/polyester/compiler"
 	"github.com/jeffrom/polyester/operator"
@@ -14,6 +13,7 @@ type execPool struct {
 	out     chan *PlanResult
 	n       int64
 	stopC   chan struct{}
+	allDone chan *Result
 
 	planStartC     chan *compiler.Plan
 	planDoneC      chan *PlanResult
@@ -30,6 +30,7 @@ func newExecPool(conc int) *execPool {
 		out:            out,
 		workers:        workers,
 		stopC:          make(chan struct{}),
+		allDone:        make(chan *Result),
 		planStartC:     make(chan *compiler.Plan, 100),
 		planDoneC:      make(chan *PlanResult, 100),
 		unblockWrkPoll: make(chan struct{}),
@@ -48,6 +49,8 @@ func (ep *execPool) enqueueOnePlan(plan *compiler.Plan, pc *planCache) {
 		fmt.Println("enqueueOnePlan: already seen:", plan.Name)
 		return
 	}
+	pc.seen[plan.Name] = true
+	atomic.AddInt64(&ep.n, 1)
 
 	fmt.Printf("enqueueOnePlan: enqueueing plan %s (%p) (%d workers)\n", plan.Name, plan, len(ep.workers))
 	for {
@@ -56,9 +59,7 @@ func (ep *execPool) enqueueOnePlan(plan *compiler.Plan, pc *planCache) {
 			fmt.Printf("enqueueOnePlan: checking worker %p\n", wrk)
 			select {
 			case wrk.in <- plan:
-				atomic.AddInt64(&ep.n, 1)
 				ep.planStartC <- plan
-				pc.seen[plan.Name] = true
 				fmt.Printf("enqueueOnePlan: enqueued %s (%p)\n", plan.Name, plan)
 				return
 			default:
@@ -83,10 +84,9 @@ func (ep *execPool) start(octx operator.Context, opts Opts) {
 }
 
 func (ep *execPool) wait() (*Result, error) {
-	// XXX lol
-	time.Sleep(1 * time.Second)
+	res := <-ep.allDone
 	fmt.Println("wait done")
-	return &Result{}, nil
+	return res, nil
 }
 
 func (ep *execPool) feederLoop(octx operator.Context, opts Opts) {
@@ -150,6 +150,7 @@ func (ep *execPool) finishPlan(res *PlanResult, pc *planCache) {
 }
 
 func (ep *execPool) gathererLoop(octx operator.Context, opts Opts) {
+	var unsortedResults []*PlanResult
 	for {
 		select {
 		case <-octx.Context.Done():
@@ -157,9 +158,12 @@ func (ep *execPool) gathererLoop(octx operator.Context, opts Opts) {
 		case <-ep.stopC:
 			return
 		case res := <-ep.out:
-			atomic.AddInt64(&ep.n, -1)
+			allDone := false
+			if atomic.AddInt64(&ep.n, -1) == 0 {
+				allDone = true
+			}
 			fmt.Printf("gatherer res: %+v\n", res)
-			// TODO might be nice to have mustSend
+			unsortedResults = append(unsortedResults, res)
 			select {
 			case ep.planDoneC <- res:
 				select {
@@ -168,6 +172,12 @@ func (ep *execPool) gathererLoop(octx operator.Context, opts Opts) {
 				}
 			default:
 				panic("unable to notify finish of: " + res.Plan.Name)
+			}
+
+			if allDone {
+				ep.allDone <- &Result{Plans: unsortedResults}
+				fmt.Println("gathererLoop all done!")
+				return
 			}
 		}
 	}
@@ -251,6 +261,6 @@ func (wrk *runWorker) add(plan *compiler.Plan) { wrk.in <- plan }
 func (wrk *runWorker) executePlan(octx operator.Context, opts Opts, plan *compiler.Plan) (*PlanResult, error) {
 	fmt.Printf("runWorker %p: executePlan %s\n", wrk, plan.Name)
 	// - need to set subplan on octx here
-	time.Sleep(200 * time.Millisecond)
+	// time.Sleep(200 * time.Millisecond)
 	return &PlanResult{Plan: plan}, nil
 }
