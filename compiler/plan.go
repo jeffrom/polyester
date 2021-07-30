@@ -21,6 +21,17 @@ type Plan struct {
 	Dependencies []*Plan              `json:"dependencies,omitempty"`
 }
 
+func (p Plan) RealOps() []operator.Interface {
+	var res []operator.Interface
+	for _, op := range p.Operations {
+		if name := op.Info().Name(); name == "plan" || name == "dependency" {
+			continue
+		}
+		res = append(res, op)
+	}
+	return res
+}
+
 func (p Plan) All() ([]*Plan, error) {
 	seen := make(map[string]bool)
 	_, all := allPlans(&p, seen)

@@ -14,8 +14,9 @@ import (
 
 func TestPool(t *testing.T) {
 	tcs := []struct {
-		name string
-		dir  string
+		name        string
+		dir         string
+		concurrency int
 	}{
 		{
 			name: "noop",
@@ -24,6 +25,11 @@ func TestPool(t *testing.T) {
 		{
 			name: "basic",
 			dir:  testenv.Path("testdata", "basic"),
+		},
+		{
+			name:        "basic-p4",
+			dir:         testenv.Path("testdata", "basic"),
+			concurrency: 4,
 		},
 	}
 
@@ -41,7 +47,11 @@ func TestPool(t *testing.T) {
 				DirRoot:  dirRoot,
 				StateDir: stateDir,
 			}
-			ep := newExecPool(1)
+			n := 1
+			if tc.concurrency > 0 {
+				n = tc.concurrency
+			}
+			ep := newExecPool(n)
 			ep.start(octx, opts)
 
 			mani, err := manifest.LoadDir(planDir)

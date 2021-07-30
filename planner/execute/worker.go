@@ -15,8 +15,9 @@ type execPool struct {
 	n       int64
 	stopC   chan struct{}
 
-	planStartC chan *compiler.Plan
-	planDoneC  chan *PlanResult
+	planStartC     chan *compiler.Plan
+	planDoneC      chan *PlanResult
+	unblockWrkPoll chan struct{}
 }
 
 func newExecPool(conc int) *execPool {
@@ -26,11 +27,12 @@ func newExecPool(conc int) *execPool {
 		workers[i] = newRunWorker(out, 0)
 	}
 	return &execPool{
-		out:        out,
-		workers:    workers,
-		stopC:      make(chan struct{}),
-		planStartC: make(chan *compiler.Plan),
-		planDoneC:  make(chan *PlanResult),
+		out:            out,
+		workers:        workers,
+		stopC:          make(chan struct{}),
+		planStartC:     make(chan *compiler.Plan, 100),
+		planDoneC:      make(chan *PlanResult, 100),
+		unblockWrkPoll: make(chan struct{}),
 	}
 }
 
@@ -47,7 +49,7 @@ func (ep *execPool) enqueueOnePlan(plan *compiler.Plan, pc *planCache) {
 		return
 	}
 
-	fmt.Printf("enqueueOnePlan: enqueueing plan %s (%p)\n", plan.Name, plan)
+	fmt.Printf("enqueueOnePlan: enqueueing plan %s (%p) (%d workers)\n", plan.Name, plan, len(ep.workers))
 	for {
 		// try each worker repeatedly
 		for _, wrk := range ep.workers {
@@ -60,11 +62,10 @@ func (ep *execPool) enqueueOnePlan(plan *compiler.Plan, pc *planCache) {
 				fmt.Printf("enqueueOnePlan: enqueued %s (%p)\n", plan.Name, plan)
 				return
 			default:
-				continue
 			}
 		}
-		fmt.Println("no available workers goroutines found??")
-		time.Sleep(500 * time.Millisecond)
+		fmt.Println("no available goroutines found, waiting for more")
+		<-ep.unblockWrkPoll
 	}
 }
 
@@ -84,12 +85,14 @@ func (ep *execPool) start(octx operator.Context, opts Opts) {
 func (ep *execPool) wait() (*Result, error) {
 	// XXX lol
 	time.Sleep(1 * time.Second)
+	fmt.Println("wait done")
 	return &Result{}, nil
 }
 
 func (ep *execPool) feederLoop(octx operator.Context, opts Opts) {
 	pc := newPlanCache()
 	for {
+		ep.runPending(pc)
 		select {
 		case <-octx.Context.Done():
 			return
@@ -97,6 +100,7 @@ func (ep *execPool) feederLoop(octx operator.Context, opts Opts) {
 			return
 		case plan := <-ep.planStartC:
 			fmt.Printf("feeder <-plan: %+v\n", plan)
+			ep.runPending(pc)
 			ep.feedPlan(plan, pc)
 		case res := <-ep.planDoneC:
 			fmt.Printf("feeder <-res: %+v\n", res)
@@ -105,9 +109,7 @@ func (ep *execPool) feederLoop(octx operator.Context, opts Opts) {
 	}
 }
 
-// feedPlan resolves the plan and enqueues its subplans one at a time, followed
-// by its own operations, if any
-func (ep *execPool) feedPlan(plan *compiler.Plan, pc *planCache) {
+func (ep *execPool) runPending(pc *planCache) {
 	fmt.Println("pending")
 	for pl := range pc.pending {
 		if pc.areDepsComplete(pl) {
@@ -115,28 +117,25 @@ func (ep *execPool) feedPlan(plan *compiler.Plan, pc *planCache) {
 			delete(pc.pending, pl)
 		}
 	}
+}
 
+// feedPlan resolves the plan and enqueues its subplans one at a time, followed
+// by its own operations, if any
+func (ep *execPool) feedPlan(plan *compiler.Plan, pc *planCache) {
+	fmt.Println("feedPlan deps:", plan.Name, len(plan.Dependencies))
 	for _, dep := range plan.Dependencies {
-		fmt.Printf("feedPlan dep %s (%p)", dep.Name, dep)
-		if pc.areDepsComplete(dep) {
-			ep.enqueueOnePlan(dep, pc)
-		} else {
-			pc.pending[dep] = true
-		}
+		fmt.Printf("feedPlan dep %s (%p)\n", dep.Name, dep)
+		ep.feedPlan(dep, pc)
 	}
-	fmt.Println("plans")
+	fmt.Println("feedPlan plans:", plan.Name, len(plan.Plans))
 	for _, sp := range plan.Plans {
-		fmt.Printf("feedPlan plan %s (%p)", sp.Name, sp)
-		if pc.areDepsComplete(sp) {
-			ep.enqueueOnePlan(sp, pc)
-		} else {
-			pc.pending[sp] = true
-		}
+		fmt.Printf("feedPlan plan %s (%p)\n", sp.Name, sp)
+		ep.feedPlan(sp, pc)
 	}
 
-	fmt.Println("maino")
-	if pc.areDepsComplete(plan) {
-		fmt.Printf("feedPlan main %s (%p)", plan.Name, plan)
+	fmt.Println("feedPlan maino", plan.Name)
+	if len(plan.RealOps()) > 0 && pc.areDepsComplete(plan) {
+		fmt.Printf("feedPlan main %s (%p)\n", plan.Name, plan)
 		ep.enqueueOnePlan(plan, pc)
 	} else {
 		pc.pending[plan] = true
@@ -145,9 +144,7 @@ func (ep *execPool) feedPlan(plan *compiler.Plan, pc *planCache) {
 }
 
 func (ep *execPool) finishPlan(res *PlanResult, pc *planCache) {
-	// TODO lookup any dependents that can run now that this plan has completed and
-	// enqueue them, then remove them from the pending map
-
+	fmt.Printf("finishPlan %s %p\n", res.Plan.Name, res.Plan)
 	pc.done[res.Plan] = true
 	ep.feedPlan(res.Plan, pc)
 }
@@ -162,7 +159,16 @@ func (ep *execPool) gathererLoop(octx operator.Context, opts Opts) {
 		case res := <-ep.out:
 			atomic.AddInt64(&ep.n, -1)
 			fmt.Printf("gatherer res: %+v\n", res)
-			ep.planDoneC <- res
+			// TODO might be nice to have mustSend
+			select {
+			case ep.planDoneC <- res:
+				select {
+				case ep.unblockWrkPoll <- struct{}{}:
+				default:
+				}
+			default:
+				panic("unable to notify finish of: " + res.Plan.Name)
+			}
 		}
 	}
 }
@@ -245,5 +251,6 @@ func (wrk *runWorker) add(plan *compiler.Plan) { wrk.in <- plan }
 func (wrk *runWorker) executePlan(octx operator.Context, opts Opts, plan *compiler.Plan) (*PlanResult, error) {
 	fmt.Printf("runWorker %p: executePlan %s\n", wrk, plan.Name)
 	// - need to set subplan on octx here
+	time.Sleep(200 * time.Millisecond)
 	return &PlanResult{Plan: plan}, nil
 }
