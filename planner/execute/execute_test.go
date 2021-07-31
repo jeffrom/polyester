@@ -2,6 +2,7 @@ package execute
 
 import (
 	"context"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -41,6 +42,9 @@ func TestPool(t *testing.T) {
 			planDir := filepath.Join(tmpdir, "manifest")
 			dirRoot := filepath.Join(tmpdir, "dir")
 			stateDir := filepath.Join(tmpdir, "state")
+			if err := os.MkdirAll(stateDir, 0700); err != nil {
+				panic(err)
+			}
 
 			octx := operator.NewContext(ctx, opfs.New(dirRoot), opfs.NewPlanDirFS(planDir), nil)
 			opts := Opts{

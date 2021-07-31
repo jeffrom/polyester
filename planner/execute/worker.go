@@ -86,7 +86,7 @@ func (ep *execPool) start(octx operator.Context, opts Opts) {
 func (ep *execPool) wait() (*Result, error) {
 	res := <-ep.allDone
 	fmt.Println("wait done")
-	return res, nil
+	return res, res.Err()
 }
 
 func (ep *execPool) feederLoop(octx operator.Context, opts Opts) {
@@ -144,6 +144,10 @@ func (ep *execPool) feedPlan(plan *compiler.Plan, pc *planCache) {
 }
 
 func (ep *execPool) finishPlan(res *PlanResult, pc *planCache) {
+	if res.Plan == nil {
+		fmt.Printf("plan finished w/out result. error: %v\n", res.Error)
+		return
+	}
 	fmt.Printf("finishPlan %s %p\n", res.Plan.Name, res.Plan)
 	pc.done[res.Plan] = true
 	ep.feedPlan(res.Plan, pc)
@@ -260,7 +264,5 @@ func (wrk *runWorker) add(plan *compiler.Plan) { wrk.in <- plan }
 
 func (wrk *runWorker) executePlan(octx operator.Context, opts Opts, plan *compiler.Plan) (*PlanResult, error) {
 	fmt.Printf("runWorker %p: executePlan %s\n", wrk, plan.Name)
-	// - need to set subplan on octx here
-	// time.Sleep(200 * time.Millisecond)
-	return &PlanResult{Plan: plan}, nil
+	return executePlan(octx, opts, plan)
 }

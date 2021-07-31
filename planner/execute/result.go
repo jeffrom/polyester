@@ -16,6 +16,15 @@ type Result struct {
 	Plans []*PlanResult `json:"plans"`
 }
 
+func (r Result) Err() error {
+	for _, plan := range r.Plans {
+		if plan.Error != nil {
+			return plan.Error
+		}
+	}
+	return nil
+}
+
 func (r Result) Changed() bool {
 	for _, pl := range r.Plans {
 		if pl.Changed {
