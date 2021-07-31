@@ -231,10 +231,10 @@ func (wrk *runWorker) start(octx operator.Context, opts Opts) {
 	go wrk.loop(octx, opts)
 }
 
-func (wrk *runWorker) stop() error {
-	close(wrk.stopC)
-	return nil
-}
+// func (wrk *runWorker) stop() error {
+// 	close(wrk.stopC)
+// 	return nil
+// }
 
 func (wrk *runWorker) loop(octx operator.Context, opts Opts) {
 Cleanup:
@@ -259,8 +259,6 @@ Cleanup:
 		}
 	}
 }
-
-func (wrk *runWorker) add(plan *compiler.Plan) { wrk.in <- plan }
 
 func (wrk *runWorker) executePlan(octx operator.Context, opts Opts, plan *compiler.Plan) (*PlanResult, error) {
 	fmt.Printf("runWorker %p: executePlan %s\n", wrk, plan.Name)

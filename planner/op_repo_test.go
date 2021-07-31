@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/jeffrom/polyester/planner/execute"
 	"github.com/jeffrom/polyester/testenv"
 )
 
@@ -55,7 +56,7 @@ func testOpRepoSimple(t *testing.T) {
 	doApply(ctx, t, pl, opts, false)
 }
 
-func doApply(ctx context.Context, t testing.TB, pl *Planner, opts ApplyOpts, expectChange bool) *Result {
+func doApply(ctx context.Context, t testing.TB, pl *Planner, opts ApplyOpts, expectChange bool) *execute.Result {
 	t.Helper()
 	if pl == nil {
 		t.Fatal("expected planner not to be nil")

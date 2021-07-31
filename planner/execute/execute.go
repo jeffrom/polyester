@@ -4,7 +4,6 @@ package execute
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"runtime"
 
@@ -40,46 +39,6 @@ func Execute(octx operator.Context, plan *compiler.Plan, opts Opts) (*Result, er
 	ep.start(octx, opts)
 	ep.add(plan)
 	return ep.wait()
-}
-
-type ExecutionNode struct {
-	plan  *compiler.Plan
-	nodes []ExecutionNode
-	thens []ExecutionNode
-}
-
-func New(plan *compiler.Plan) ExecutionNode { return ExecutionNode{plan: plan} }
-
-func (en ExecutionNode) append(plan *compiler.Plan) ExecutionNode {
-	en.nodes = append(en.nodes, ExecutionNode{plan: plan})
-	return en
-}
-
-func (en ExecutionNode) then(plan *compiler.Plan) ExecutionNode {
-	en.thens = append(en.thens, ExecutionNode{plan: plan})
-	return en
-}
-
-func (en ExecutionNode) TextSummary(w io.Writer) error {
-	return en.textSummary(w, en, 0)
-}
-
-func (en ExecutionNode) textSummary(w io.Writer, node ExecutionNode, depth int) error {
-	// for _, node := range node.nodes {
-	// 	io.WriteString(w, fmt.Sprintf("%s ∟ %s\n", strings.Repeat(" ", depth*2), node.plan.Name))
-	// 	for _, then := range node.thens {
-	// 		io.WriteString(w, fmt.Sprintf("%s ∟ %s\n", strings.Repeat(" ", (depth*2)+2), then.plan.Name))
-	// 	}
-	// }
-	return nil
-}
-
-func (en ExecutionNode) GetState(octx operator.Context, opts Opts) ([]state.State, error) {
-	return nil, nil
-}
-
-func (en ExecutionNode) Execute(octx operator.Context, plan *compiler.Plan, opts Opts) (*Result, error) {
-	return nil, nil
 }
 
 func executePlan(octx operator.Context, opts Opts, plan *compiler.Plan) (*PlanResult, error) {
@@ -243,7 +202,6 @@ func executeOperation(octx operator.Context, op operator.Interface, opts Opts, d
 	res.Dirty = dirty
 	res.Executed = executed
 	return res, nil
-	return nil, nil
 }
 
 func getOpChanged(octx operator.Context, op operator.Interface, prevst, currst, desiredst state.State) (bool, error) {

@@ -4,45 +4,10 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
-	"os"
-	"path/filepath"
 	"regexp"
 
 	"github.com/jeffrom/polyester/operator"
-	"github.com/jeffrom/polyester/state"
 )
-
-func readPrevState(data *operator.InfoData, stateDir string) (state.State, error) {
-	st := state.State{}
-	key, err := opCacheKey(data)
-	if err != nil {
-		return st, err
-	}
-	p := filepath.Join(stateDir, key)
-	f, err := os.Open(p)
-	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			return st, nil
-		}
-		return st, err
-	}
-	defer f.Close()
-
-	if err := json.NewDecoder(f).Decode(&st); err != nil {
-		return st, err
-	}
-	return st, nil
-}
-
-func saveState(data *operator.InfoData, st state.State, stateDir string) error {
-	key, err := opCacheKey(data)
-	if err != nil {
-		return err
-	}
-	p := filepath.Join(stateDir, key)
-	return st.WriteFile(p)
-}
 
 var nonAlnumRE = regexp.MustCompile(`[^A-Za-z0-9]`)
 

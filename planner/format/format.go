@@ -6,6 +6,16 @@ import (
 	"io"
 )
 
+// TODO operation should output smth like this (or maybe just tabwriter):
+// useradd:			[   ] [ unchanged ] [          ]
+// sh:				[ X ] [ unchanged ] [  success ]
+// atomic-copy:		[ X ] [ changed   ] [  success ]
+// apt-install:		[ X ] [ empty     ] [   failed ] error: exit status 1 (apt install abc)
+// touch:			[   ] [ unchanged ] [          ]
+//
+// if it fails, print any output (logs, combined output from shell) from the
+// operation (at the end of the run, or right when it happens?)
+
 // type Interface struct {
 // }
 
