@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/jeffrom/polyester/planner"
+	"github.com/jeffrom/polyester/planner/execute"
 )
 
 func newApplyCmd() *cobra.Command {
@@ -19,7 +20,7 @@ func newApplyCmd() *cobra.Command {
 			if len(args) > 0 {
 				dirs = args
 			}
-			var results []*planner.Result
+			var results []*execute.Result
 			for _, dir := range dirs {
 				pl, err := planner.New(dir)
 				if err != nil {

@@ -12,6 +12,7 @@ import (
 	"github.com/jeffrom/polyester/operator"
 	"github.com/jeffrom/polyester/operator/opfs"
 	"github.com/jeffrom/polyester/operator/templates"
+	"github.com/jeffrom/polyester/planner/execute"
 	"github.com/jeffrom/polyester/state"
 )
 
@@ -41,7 +42,7 @@ func (o ApplyOpts) withDefaults() ApplyOpts {
 	}
 }
 
-func (r *Planner) Apply(ctx context.Context, opts ApplyOpts) (*Result, error) {
+func (r *Planner) Apply(ctx context.Context, opts ApplyOpts) (*execute.Result, error) {
 	opts = opts.withDefaults()
 	if err := os.MkdirAll(opts.StateDir, 0700); err != nil {
 		return nil, err
@@ -109,37 +110,42 @@ func (r *Planner) resolvePlanDir(ctx context.Context) (string, error) {
 	return lastMatch, nil
 }
 
-func (r *Planner) executePlans(ctx context.Context, plan *compiler.Plan, stateDir string, tmpl *templates.Templates, opts ApplyOpts) (*Result, error) {
+func (r *Planner) executePlans(ctx context.Context, plan *compiler.Plan, stateDir string, tmpl *templates.Templates, opts ApplyOpts) (*execute.Result, error) {
 	dirRoot := opts.DirRoot
-	all, err := plan.All()
+	_, err := plan.All()
 	if err != nil {
 		return nil, err
 	}
 
 	octx := operator.NewContext(ctx, opfs.New(dirRoot), opfs.NewPlanDirFS(r.planDir), tmpl)
-	// eopts := execute.Opts{
-	// 	Dryrun:    opts.Dryrun,
-	// 	DirRoot:   opts.DirRoot,
-	// 	StateDir:  stateDir,
-	// // 	Templates: tmpl,
+	return execute.Execute(octx, plan, execute.Opts{
+		Dryrun:   opts.Dryrun,
+		DirRoot:  opts.DirRoot,
+		StateDir: stateDir,
+	})
+	// // eopts := execute.Opts{
+	// // 	Dryrun:    opts.Dryrun,
+	// // 	DirRoot:   opts.DirRoot,
+	// // 	StateDir:  stateDir,
+	// // // 	Templates: tmpl,
+	// // }
+	// // return execute.New(plan).Do(octx, eopts)
+
+	// finalRes := &Result{}
+	// for _, subplan := range all {
+	// 	// fmt.Println("starting executePlan()", subplan.Name)
+	// 	// TODO collect failures but run all plans, and report at the end
+	// 	// (unless --fail-fast).
+	// 	res, err := r.executePlan(octx, subplan, stateDir, opts)
+	// 	if err != nil {
+	// 		return finalRes, err
+	// 	}
+	// 	if res != nil {
+	// 		finalRes.Plans = append(finalRes.Plans, res)
+	// 	}
 	// }
-	// return execute.New(plan).Do(octx, eopts)
 
-	finalRes := &Result{}
-	for _, subplan := range all {
-		// fmt.Println("starting executePlan()", subplan.Name)
-		// TODO collect failures but run all plans, and report at the end
-		// (unless --fail-fast).
-		res, err := r.executePlan(octx, subplan, stateDir, opts)
-		if err != nil {
-			return finalRes, err
-		}
-		if res != nil {
-			finalRes.Plans = append(finalRes.Plans, res)
-		}
-	}
-
-	return finalRes, nil
+	// return finalRes, nil
 }
 
 // executePlan runs a single plan
