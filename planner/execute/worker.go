@@ -63,6 +63,8 @@ func (ep *execPool) enqueueOnePlan(plan *compiler.Plan, pc *planCache) {
 				fmt.Printf("enqueueOnePlan: enqueued %s (%p)\n", plan.Name, plan)
 				return
 			default:
+				fmt.Printf("enqueueOnePlan: %s (%p) wasn't available\n", plan.Name, plan)
+				// fmt.Printf("%+v\n", wrk)
 			}
 		}
 		fmt.Println("no available goroutines found, waiting for more")
