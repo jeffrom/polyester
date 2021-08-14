@@ -1,7 +1,8 @@
 // Package manifest contains functions to save and load manifests.
 //
 // Manifests are pre-"compiled" collections of scripts, templates, and files
-// that can be read and written to and from disk, and can also be compiled.
+// that can be read and written to and from disk, and can also be compiled and
+// executed on a host.
 package manifest
 
 import (

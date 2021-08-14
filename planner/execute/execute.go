@@ -44,8 +44,8 @@ func Execute(octx operator.Context, plan *compiler.Plan, opts Opts) (*Result, er
 func executePlan(octx operator.Context, opts Opts, plan *compiler.Plan) (*PlanResult, error) {
 	if plan.Name != "main" {
 		// fmt.Println("setting subdir", plan.Name)
-		octx = octx.WithSubplan(octx.PlanDir.Join())
-		// fmt.Println("executePlan plan dir:", octx.PlanDir.Join("/"))
+		octx = octx.WithSubplan(octx.PlanDir.Join("plans", plan.Name))
+		// fmt.Println("executePlan plan dir:", octx.PlanDir.Join(""))
 	}
 
 	prevs, currs, err := readOpStates(octx, plan, opts)
