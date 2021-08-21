@@ -24,7 +24,7 @@ func newExecPool(conc int) *execPool {
 	out := make(chan *PlanResult)
 	workers := make([]*runWorker, conc)
 	for i := 0; i < conc; i++ {
-		workers[i] = newRunWorker(out, 0)
+		workers[i] = newRunWorker(out, 1)
 	}
 	return &execPool{
 		out:            out,
@@ -41,6 +41,7 @@ func newExecPool(conc int) *execPool {
 // manifest should be passed to this function, which will resolve dependencies
 // and enqueue plan executions in the right order.
 func (ep *execPool) add(plan *compiler.Plan) {
+	// fmt.Printf("execPool: add plan: %s\n", plan.Name)
 	ep.planStartC <- plan
 }
 
@@ -63,8 +64,7 @@ func (ep *execPool) enqueueOnePlan(plan *compiler.Plan, pc *planCache) {
 				fmt.Printf("enqueueOnePlan: enqueued %s (%p)\n", plan.Name, plan)
 				return
 			default:
-				fmt.Printf("enqueueOnePlan: %s (%p) wasn't available\n", plan.Name, plan)
-				// fmt.Printf("%+v\n", wrk)
+				fmt.Printf("enqueueOnePlan: worker %p wasn't available\n", wrk)
 			}
 		}
 		fmt.Println("no available goroutines found, waiting for more")
@@ -89,6 +89,13 @@ func (ep *execPool) wait() (*Result, error) {
 	res := <-ep.allDone
 	fmt.Println("wait done")
 	return res, res.Err()
+}
+
+func (ep *execPool) stop() {
+	for _, wrk := range ep.workers {
+		close(wrk.stopC)
+	}
+	close(ep.stopC)
 }
 
 func (ep *execPool) feederLoop(octx operator.Context, opts Opts) {
@@ -230,6 +237,7 @@ func newRunWorker(out chan<- *PlanResult, queueSize int) *runWorker {
 }
 
 func (wrk *runWorker) start(octx operator.Context, opts Opts) {
+	fmt.Printf("worker %p start\n", wrk)
 	go wrk.loop(octx, opts)
 }
 
@@ -260,6 +268,7 @@ Cleanup:
 			wrk.out <- planRes
 		}
 	}
+	fmt.Printf("worker %p loop done\n", wrk)
 }
 
 func (wrk *runWorker) executePlan(octx operator.Context, opts Opts, plan *compiler.Plan) (*PlanResult, error) {

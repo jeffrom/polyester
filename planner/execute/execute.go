@@ -37,6 +37,7 @@ func Execute(octx operator.Context, plan *compiler.Plan, opts Opts) (*Result, er
 
 	ep := newExecPool(opts.Concurrency)
 	ep.start(octx, opts)
+	defer ep.stop()
 	ep.add(plan)
 	return ep.wait()
 }
