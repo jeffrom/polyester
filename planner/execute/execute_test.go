@@ -27,6 +27,7 @@ func TestPool(t *testing.T) {
 			name: "basic",
 			dir:  testenv.Path("testdata", "basic"),
 		},
+		// TODO still broke
 		{
 			name:        "basic-p4",
 			dir:         testenv.Path("testdata", "basic"),
