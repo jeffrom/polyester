@@ -99,7 +99,7 @@ test: build
 	GO111MODULE=on TESTBIN=$$(pwd)/polyester go test -short -cover -count 1 ./...
 
 .PHONY: test.race
-test.race:
+test.race: build
 	GO111MODULE=on TESTBIN=$$(pwd)/polyester go test -race ./...
 
 .PHONY: test.lint

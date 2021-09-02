@@ -1,4 +1,4 @@
-package planner
+package execute
 
 import (
 	"bufio"
@@ -14,6 +14,18 @@ import (
 
 type Result struct {
 	Plans []*PlanResult `json:"plans"`
+}
+
+func (r Result) Err() error {
+	for _, plan := range r.Plans {
+		if plan == nil {
+			continue
+		}
+		if plan.Error != nil {
+			return plan.Error
+		}
+	}
+	return nil
 }
 
 func (r Result) Changed() bool {
@@ -32,6 +44,9 @@ func (r Result) TextSummary(w io.Writer) error {
 		return err
 	}
 	for _, plan := range r.Plans {
+		if plan == nil {
+			continue
+		}
 		// bw.WriteString("---\n")
 		label := "dirty"
 		if !plan.Changed {
@@ -76,6 +91,10 @@ func (r Result) TextSummary(w io.Writer) error {
 func (r Result) writeStateChanges(bw *bufio.Writer) error {
 	planChanges := 0
 	for _, plan := range r.Plans {
+		if plan == nil {
+			fmt.Println("WARNING: nil plan ended up in results")
+			continue
+		}
 		for _, opRes := range plan.Operations {
 			if opRes.Changed {
 				planChanges++
@@ -99,6 +118,9 @@ func (r Result) writeStateChanges(bw *bufio.Writer) error {
 		"ARGUMENTS",
 	)
 	for _, plan := range r.Plans {
+		if plan == nil {
+			continue
+		}
 		for _, opRes := range plan.Operations {
 			if !opRes.Changed {
 				continue
@@ -154,6 +176,8 @@ type PlanResult struct {
 	Name       string             `json:"name"`
 	Operations []*OperationResult `json:"operations"`
 	Changed    bool               `json:"changed"`
+	Error      error              `json:"error"`
+	Plan       *compiler.Plan
 }
 
 type OperationResult struct {

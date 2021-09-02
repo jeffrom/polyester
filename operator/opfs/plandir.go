@@ -172,12 +172,13 @@ func (pd fsPlanDir) Resolve(kind string, pats []string) ([]string, error) {
 		}
 
 		if spDir != "" {
+			fmt.Println("plandir resolve subproject dir:", spDir)
 			cands = []string{
 				filepath.Join(spDir, kind, pat),
 				filepath.Join(planDir, kind, pat),
 			}
 		}
-		// fmt.Println("cands:", cands)
+		fmt.Println("plandir resolve candidates:", cands)
 
 		parts := strings.SplitN(pat, string(sep), 3)
 		if len(parts) == 3 && parts[0] == "plans" {
@@ -202,7 +203,7 @@ func (pd fsPlanDir) Resolve(kind string, pats []string) ([]string, error) {
 		}
 
 		if !found {
-			return nil, fmt.Errorf("plandir copy: %s not found", pat)
+			return nil, fmt.Errorf("plandir: %s not found", pat)
 		}
 	}
 
