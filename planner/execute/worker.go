@@ -153,8 +153,12 @@ func (ep *execPool) feedPlan(plan *compiler.Plan, pc *planCache) {
 }
 
 func (ep *execPool) finishPlan(res *PlanResult, pc *planCache) {
-	if res.Plan == nil {
+	if res == nil {
 		fmt.Printf("plan finished w/out result. error: %v\n", res.Error)
+		return
+	}
+	if res.Plan == nil {
+		fmt.Printf("plan finished w/out result.plan. error: %v\n", res.Error)
 		return
 	}
 	fmt.Printf("finishPlan %s %p\n", res.Plan.Name, res.Plan)
