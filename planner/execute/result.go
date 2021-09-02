@@ -18,6 +18,9 @@ type Result struct {
 
 func (r Result) Err() error {
 	for _, plan := range r.Plans {
+		if plan == nil {
+			continue
+		}
 		if plan.Error != nil {
 			return plan.Error
 		}
