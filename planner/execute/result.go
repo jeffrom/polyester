@@ -88,6 +88,10 @@ func (r Result) TextSummary(w io.Writer) error {
 func (r Result) writeStateChanges(bw *bufio.Writer) error {
 	planChanges := 0
 	for _, plan := range r.Plans {
+		if plan == nil {
+			fmt.Println("WARNING: nil plan ended up in results")
+			continue
+		}
 		for _, opRes := range plan.Operations {
 			if opRes.Changed {
 				planChanges++
