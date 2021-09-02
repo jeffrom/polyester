@@ -27,7 +27,6 @@ func TestPool(t *testing.T) {
 			name: "basic",
 			dir:  testenv.Path("testdata", "basic"),
 		},
-		// TODO still broke
 		{
 			name:        "basic-p4",
 			dir:         testenv.Path("testdata", "basic"),
@@ -44,6 +43,9 @@ func TestPool(t *testing.T) {
 			dirRoot := filepath.Join(tmpdir, "dir")
 			stateDir := filepath.Join(tmpdir, "state")
 			if err := os.MkdirAll(stateDir, 0700); err != nil {
+				panic(err)
+			}
+			if err := os.MkdirAll(dirRoot, 0700); err != nil {
 				panic(err)
 			}
 
