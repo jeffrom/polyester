@@ -44,6 +44,9 @@ func (r Result) TextSummary(w io.Writer) error {
 		return err
 	}
 	for _, plan := range r.Plans {
+		if plan == nil {
+			continue
+		}
 		// bw.WriteString("---\n")
 		label := "dirty"
 		if !plan.Changed {
