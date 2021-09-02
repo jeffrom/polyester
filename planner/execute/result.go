@@ -115,6 +115,9 @@ func (r Result) writeStateChanges(bw *bufio.Writer) error {
 		"ARGUMENTS",
 	)
 	for _, plan := range r.Plans {
+		if plan == nil {
+			continue
+		}
 		for _, opRes := range plan.Operations {
 			if !opRes.Changed {
 				continue
