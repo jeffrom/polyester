@@ -72,7 +72,7 @@ func (pd fsPlanDir) Open(name string) (fs.File, error) {
 		return pd.dirFS.Open(name)
 	}
 	p := pd.cleanPath(name)
-	fmt.Println("plandir Open:", name, p)
+	// fmt.Println("plandir Open:", name, p)
 	return pd.dirFS.Open(p)
 }
 
@@ -172,13 +172,13 @@ func (pd fsPlanDir) Resolve(kind string, pats []string) ([]string, error) {
 		}
 
 		if spDir != "" {
-			fmt.Println("plandir resolve subproject dir:", spDir)
+			// fmt.Println("plandir resolve subproject dir:", spDir)
 			cands = []string{
 				filepath.Join(spDir, kind, pat),
 				filepath.Join(planDir, kind, pat),
 			}
 		}
-		fmt.Println("plandir resolve candidates:", cands)
+		// fmt.Println("plandir resolve candidates:", cands)
 
 		parts := strings.SplitN(pat, string(sep), 3)
 		if len(parts) == 3 && parts[0] == "plans" {
