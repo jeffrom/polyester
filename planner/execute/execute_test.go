@@ -10,6 +10,7 @@ import (
 	"github.com/jeffrom/polyester/manifest"
 	"github.com/jeffrom/polyester/operator"
 	"github.com/jeffrom/polyester/operator/opfs"
+	"github.com/jeffrom/polyester/stdio"
 	"github.com/jeffrom/polyester/testenv"
 )
 
@@ -58,7 +59,7 @@ func TestPool(t *testing.T) {
 			if tc.concurrency > 0 {
 				n = tc.concurrency
 			}
-			ep := newExecPool(n)
+			ep := newExecPool(n, stdio.StdIO{})
 			ep.start(octx, opts)
 
 			mani, err := manifest.LoadDir(planDir)
