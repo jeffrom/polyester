@@ -6,9 +6,11 @@ import (
 
 	"github.com/jeffrom/polyester/compiler"
 	"github.com/jeffrom/polyester/operator"
+	"github.com/jeffrom/polyester/stdio"
 )
 
 type execPool struct {
+	std     stdio.StdIO
 	workers []*runWorker
 	out     chan *PlanResult
 	n       int64
@@ -20,13 +22,14 @@ type execPool struct {
 	unblockWrkPoll chan struct{}
 }
 
-func newExecPool(conc int) *execPool {
+func newExecPool(conc int, std stdio.StdIO) *execPool {
 	out := make(chan *PlanResult)
 	workers := make([]*runWorker, conc)
 	for i := 0; i < conc; i++ {
 		workers[i] = newRunWorker(out, 1)
 	}
 	return &execPool{
+		std:            std,
 		out:            out,
 		workers:        workers,
 		stopC:          make(chan struct{}),
@@ -41,33 +44,33 @@ func newExecPool(conc int) *execPool {
 // manifest should be passed to this function, which will resolve dependencies
 // and enqueue plan executions in the right order.
 func (ep *execPool) add(plan *compiler.Plan) {
-	// fmt.Printf("execPool: add plan: %s\n", plan.Name)
+	ep.std.Debugf("execPool: add plan: %s", plan.Name)
 	ep.planStartC <- plan
 }
 
 func (ep *execPool) enqueueOnePlan(plan *compiler.Plan, pc *planCache) {
 	if pc.seen[plan.Name] {
-		fmt.Println("enqueueOnePlan: already seen:", plan.Name)
+		ep.std.Debug("enqueueOnePlan: already seen:", plan.Name)
 		return
 	}
 	pc.seen[plan.Name] = true
 	atomic.AddInt64(&ep.n, 1)
 
-	fmt.Printf("enqueueOnePlan: enqueueing plan %s (%p) (%d workers)\n", plan.Name, plan, len(ep.workers))
+	ep.std.Debug("enqueueOnePlan: enqueueing plan %s (%p) (%d workers)\n", plan.Name, plan, len(ep.workers))
 	for {
 		// try each worker repeatedly
 		for _, wrk := range ep.workers {
-			fmt.Printf("enqueueOnePlan: checking worker %p\n", wrk)
+			ep.std.Debugf("enqueueOnePlan: checking worker %p", wrk)
 			select {
 			case wrk.in <- plan:
 				ep.planStartC <- plan
-				fmt.Printf("enqueueOnePlan: enqueued %s (%p)\n", plan.Name, plan)
+				ep.std.Debugf("enqueueOnePlan: enqueued %s (%p)", plan.Name, plan)
 				return
 			default:
-				fmt.Printf("enqueueOnePlan: worker %p wasn't available\n", wrk)
+				ep.std.Debugf("enqueueOnePlan: worker %p wasn't available", wrk)
 			}
 		}
-		fmt.Println("no available goroutines found, waiting for more")
+		ep.std.Info("execPool: no available goroutines found, waiting for more")
 		<-ep.unblockWrkPoll
 	}
 }
@@ -87,7 +90,7 @@ func (ep *execPool) start(octx operator.Context, opts Opts) {
 
 func (ep *execPool) wait() (*Result, error) {
 	res := <-ep.allDone
-	fmt.Println("wait done")
+	ep.std.Infof("wait done")
 	return res, res.Err()
 }
 
@@ -108,18 +111,18 @@ func (ep *execPool) feederLoop(octx operator.Context, opts Opts) {
 		case <-ep.stopC:
 			return
 		case plan := <-ep.planStartC:
-			fmt.Printf("feeder <-plan: %+v\n", plan)
+			ep.std.Debugf("feeder <-plan: %+v", plan)
 			ep.runPending(pc)
 			ep.feedPlan(plan, pc)
 		case res := <-ep.planDoneC:
-			fmt.Printf("feeder <-res: %+v\n", res)
+			ep.std.Debugf("feeder <-res: %+v", res)
 			ep.finishPlan(res, pc)
 		}
 	}
 }
 
 func (ep *execPool) runPending(pc *planCache) {
-	fmt.Println("pending")
+	ep.std.Debug("pending")
 	for pl := range pc.pending {
 		if pc.areDepsComplete(pl) {
 			ep.enqueueOnePlan(pl, pc)
@@ -131,37 +134,37 @@ func (ep *execPool) runPending(pc *planCache) {
 // feedPlan resolves the plan and enqueues its subplans one at a time, followed
 // by its own operations, if any
 func (ep *execPool) feedPlan(plan *compiler.Plan, pc *planCache) {
-	fmt.Println("feedPlan deps:", plan.Name, len(plan.Dependencies))
+	ep.std.Debug("feedPlan deps:", plan.Name, len(plan.Dependencies))
 	for _, dep := range plan.Dependencies {
-		fmt.Printf("feedPlan dep %s (%p)\n", dep.Name, dep)
+		ep.std.Debugf("feedPlan dep %s (%p)", dep.Name, dep)
 		ep.feedPlan(dep, pc)
 	}
 	fmt.Println("feedPlan plans:", plan.Name, len(plan.Plans))
 	for _, sp := range plan.Plans {
-		fmt.Printf("feedPlan plan %s (%p)\n", sp.Name, sp)
+		ep.std.Debugf("feedPlan plan %s (%p)", sp.Name, sp)
 		ep.feedPlan(sp, pc)
 	}
 
 	fmt.Println("feedPlan maino", plan.Name)
 	if len(plan.RealOps()) > 0 && pc.areDepsComplete(plan) {
-		fmt.Printf("feedPlan main %s (%p)\n", plan.Name, plan)
+		ep.std.Debugf("feedPlan main %s (%p)", plan.Name, plan)
 		ep.enqueueOnePlan(plan, pc)
 	} else {
 		pc.pending[plan] = true
 	}
-	fmt.Printf("feedPlan %s (%p): deps: %d, plans: %d, operations: %d\n", plan.Name, plan, len(plan.Dependencies), len(plan.Plans), len(plan.Operations))
+	ep.std.Debugf("feedPlan %s (%p): deps: %d, plans: %d, operations: %d", plan.Name, plan, len(plan.Dependencies), len(plan.Plans), len(plan.Operations))
 }
 
 func (ep *execPool) finishPlan(res *PlanResult, pc *planCache) {
 	if res == nil {
-		fmt.Printf("plan finished with nil result")
+		ep.std.Debug("plan finished with nil result")
 		return
 	}
 	if res.Plan == nil {
-		fmt.Printf("plan finished w/out result.plan. error: %v\n", res.Error)
+		ep.std.Debugf("plan finished w/out result.plan. error: %v", res.Error)
 		return
 	}
-	fmt.Printf("finishPlan %s %p\n", res.Plan.Name, res.Plan)
+	ep.std.Debugf("finishPlan %s %p", res.Plan.Name, res.Plan)
 	pc.done[res.Plan] = true
 	ep.feedPlan(res.Plan, pc)
 }
@@ -179,7 +182,7 @@ func (ep *execPool) gathererLoop(octx operator.Context, opts Opts) {
 			if atomic.AddInt64(&ep.n, -1) == 0 {
 				allDone = true
 			}
-			fmt.Printf("gatherer res: %+v\n", res)
+			ep.std.Debugf("gatherer res: %+v", res)
 			unsortedResults = append(unsortedResults, res)
 			select {
 			case ep.planDoneC <- res:
@@ -193,7 +196,7 @@ func (ep *execPool) gathererLoop(octx operator.Context, opts Opts) {
 
 			if allDone {
 				ep.allDone <- &Result{Plans: unsortedResults}
-				fmt.Println("gathererLoop all done!")
+				ep.std.Debug("gathererLoop all done!")
 				return
 			}
 		}
@@ -241,7 +244,8 @@ func newRunWorker(out chan<- *PlanResult, queueSize int) *runWorker {
 }
 
 func (wrk *runWorker) start(octx operator.Context, opts Opts) {
-	fmt.Printf("worker %p start\n", wrk)
+	std := stdio.FromContext(octx.Context)
+	std.Debugf("worker %p start", wrk)
 	go wrk.loop(octx, opts)
 }
 
@@ -251,6 +255,7 @@ func (wrk *runWorker) start(octx operator.Context, opts Opts) {
 // }
 
 func (wrk *runWorker) loop(octx operator.Context, opts Opts) {
+	std := stdio.FromContext(octx.Context)
 Cleanup:
 	for {
 		select {
@@ -260,7 +265,7 @@ Cleanup:
 			break Cleanup
 
 		case plan := <-wrk.in:
-			fmt.Printf("runWorker %p: starting: %s\n", wrk, plan.Name)
+			std.Debugf("runWorker %p: starting: %s", wrk, plan.Name)
 			planRes, err := wrk.executePlan(octx, opts, plan)
 			if err != nil {
 				if planRes == nil {
@@ -272,10 +277,11 @@ Cleanup:
 			wrk.out <- planRes
 		}
 	}
-	fmt.Printf("worker %p loop done\n", wrk)
+	std.Debugf("worker %p loop done", wrk)
 }
 
 func (wrk *runWorker) executePlan(octx operator.Context, opts Opts, plan *compiler.Plan) (*PlanResult, error) {
-	fmt.Printf("runWorker %p: executePlan %s\n", wrk, plan.Name)
-	return executePlan(octx, opts, plan)
+	std := stdio.FromContext(octx.Context).WithScope(plan.Name, fmt.Sprintf("%p", wrk))
+	std.Debugf("runWorker %p: executePlan %s", wrk, plan.Name)
+	return executePlan(octx, std, opts, plan)
 }

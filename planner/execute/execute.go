@@ -11,6 +11,7 @@ import (
 	"github.com/jeffrom/polyester/operator"
 	"github.com/jeffrom/polyester/planner/format"
 	"github.com/jeffrom/polyester/state"
+	"github.com/jeffrom/polyester/stdio"
 )
 
 type Opts struct {
@@ -35,25 +36,27 @@ func Execute(octx operator.Context, plan *compiler.Plan, opts Opts) (*Result, er
 		opts.Concurrency = runtime.NumCPU()
 	}
 
-	ep := newExecPool(opts.Concurrency)
+	ep := newExecPool(opts.Concurrency, stdio.FromContext(octx.Context))
 	ep.start(octx, opts)
 	defer ep.stop()
 	ep.add(plan)
 	return ep.wait()
 }
 
-func executePlan(octx operator.Context, opts Opts, plan *compiler.Plan) (*PlanResult, error) {
+func executePlan(octx operator.Context, std stdio.StdIO, opts Opts, plan *compiler.Plan) (*PlanResult, error) {
 	if plan.Name != "main" {
 		// fmt.Println("setting subdir", plan.Name)
-		octx = octx.WithSubplan(octx.PlanDir.Join("plans", plan.Name))
-		// fmt.Println("executePlan plan dir:", octx.PlanDir.Join(""))
+		spdir := octx.PlanDir.Join("plans", plan.Name)
+		std.Debugf("subdir for plan %s: %s", plan.Name, spdir)
+		octx = octx.WithSubplan(spdir)
+		std.Debug("plan dir:", octx.PlanDir.Join(""))
 	}
 
 	prevs, currs, err := readOpStates(octx, plan, opts)
 	if err != nil {
 		return nil, err
 	}
-	if err := plan.TextSummary(os.Stdout, prevs, currs); err != nil {
+	if err := plan.TextSummary(std.Stdout(), prevs, currs); err != nil {
 		return nil, err
 	}
 

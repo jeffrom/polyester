@@ -13,6 +13,7 @@ import (
 
 	"github.com/jeffrom/polyester/compiler"
 	"github.com/jeffrom/polyester/operator/opfs"
+	"github.com/jeffrom/polyester/stdio"
 )
 
 // Manifest is a top-level plan that contains its own state management.  the
@@ -59,14 +60,14 @@ func (r *Planner) setupState(plan *compiler.Plan, opts ApplyOpts) (string, error
 	return stateDir, nil
 }
 
-func (r *Planner) pruneState(plan *compiler.Plan, stateDir string) error {
+func (r *Planner) pruneState(std stdio.StdIO, plan *compiler.Plan, stateDir string) error {
 	// don't prune for single subplan runs, only for manifests.
 	mDir, err := r.findManifestDir()
 	if err != nil {
 		return err
 	}
 	if mDir != r.planDir || r.planFile != "polyester.sh" && r.planFile != "" {
-		fmt.Println("skipping prune since a manifest is not being executed")
+		std.Info("skipping prune since a manifest is not being executed")
 		return nil
 	}
 
@@ -89,7 +90,7 @@ func (r *Planner) pruneState(plan *compiler.Plan, stateDir string) error {
 			return nil
 		}
 		if !keys[d.Name()] {
-			fmt.Println("pruning old state:", p)
+			std.Info("pruning old state:", p)
 			if err := os.Remove(p); err != nil {
 				return err
 			}
@@ -173,6 +174,11 @@ func manifestChecksum(plan *compiler.Plan, h hash.Hash) (string, error) {
 		}
 		if err := data.Encode(h); err != nil {
 			return "", err
+		}
+
+		// include the referenced pcopy sources
+		switch op.Info().Name() {
+		case "pcopy":
 		}
 	}
 

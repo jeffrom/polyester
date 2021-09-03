@@ -15,6 +15,7 @@ import (
 
 	"github.com/jeffrom/polyester/executil"
 	"github.com/jeffrom/polyester/manifest"
+	"github.com/jeffrom/polyester/stdio"
 )
 
 type Compiler struct {
@@ -32,7 +33,7 @@ func (c *Compiler) Compile(ctx context.Context, m *manifest.Manifest) (*Plan, er
 	var selfFile string
 	if c.environ == nil {
 		var err error
-		selfFile, environ, err = addSelfPathToEnviron([]string{"_POLY_PLAN=-"})
+		selfFile, environ, err = addSelfPathToEnviron(stdio.FromContext(ctx), []string{"_POLY_PLAN=-"})
 		if err != nil {
 			return nil, err
 		}
@@ -90,7 +91,7 @@ func (c *Compiler) execOne(ctx context.Context, im *intermediatePlan, name strin
 	return nil
 }
 
-func addSelfPathToEnviron(environ []string) (string, []string, error) {
+func addSelfPathToEnviron(o stdio.StdIO, environ []string) (string, []string, error) {
 	testbin := os.Getenv("TESTBIN")
 	if _, err := exec.LookPath("polyester"); testbin == "" && err == nil {
 		return "", environ, nil
@@ -111,7 +112,7 @@ func addSelfPathToEnviron(environ []string) (string, []string, error) {
 		}
 
 		environ[i] = selfDir + ":" + env
-		// fmt.Println("set $PATH=", environ[i])
+		o.Debugf("setenv $PATH=%s", environ[i])
 		found = true
 		break
 	}

@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/jeffrom/polyester/cmd/polyester/commands"
+	"github.com/jeffrom/polyester/stdio"
 )
 
 func main() {
@@ -16,5 +17,6 @@ func main() {
 }
 
 func run(rawArgs []string) error {
-	return commands.ExecArgs(context.Background(), rawArgs[1:])
+	ctx := stdio.SetContext(context.Background(), stdio.StdIO{})
+	return commands.ExecArgs(ctx, rawArgs[1:])
 }

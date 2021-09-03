@@ -11,6 +11,7 @@ import (
 	"github.com/jeffrom/polyester/compiler"
 	"github.com/jeffrom/polyester/operator"
 	"github.com/jeffrom/polyester/planner"
+	"github.com/jeffrom/polyester/stdio"
 )
 
 func ExecArgs(ctx context.Context, args []string) error {
@@ -38,6 +39,10 @@ func ExecArgs(ctx context.Context, args []string) error {
 		},
 	}
 
+	std := stdio.FromContext(ctx)
+	rootCmd.PersistentFlags().BoolVarP(&std.Verbose, "verbose", "v", false, "Print additional debug information")
+	rootCmd.PersistentFlags().BoolVarP(&std.Quiet, "quiet", "q", false, "Print only errors and warnings")
+
 	if err := addOps(rootCmd, operatorCommandForPlan); err != nil {
 		return err
 	}
@@ -55,8 +60,10 @@ func ExecArgs(ctx context.Context, args []string) error {
 }
 
 func addOps(parent *cobra.Command, fn operatorCommandFunc) error {
+	ctx := parent.Context()
+	std := stdio.FromContext(ctx)
 	for _, op := range compiler.Operators() {
-		// fmt.Println("adding command name:", op.Info().Name())
+		std.Debug("adding command name:", op.Info().Name())
 		parent.AddCommand(fn(op))
 	}
 	return nil

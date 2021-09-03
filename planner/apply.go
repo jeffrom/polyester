@@ -2,7 +2,6 @@ package planner
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -13,6 +12,7 @@ import (
 	"github.com/jeffrom/polyester/operator/opfs"
 	"github.com/jeffrom/polyester/operator/templates"
 	"github.com/jeffrom/polyester/planner/execute"
+	"github.com/jeffrom/polyester/stdio"
 )
 
 type ApplyOpts struct {
@@ -55,7 +55,8 @@ func (r *Planner) Apply(ctx context.Context, opts ApplyOpts) (*execute.Result, e
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("current directory: %s\nplan directory: %s\ncompiling plan: %s\n",
+	std := stdio.FromContext(ctx)
+	std.Infof("current directory: %s\nplan directory: %s\ncompiling plan: %s",
 		wd,
 		strings.TrimPrefix(planDir, wd+"/"),
 		strings.TrimPrefix(filepath.Join(r.rootDir, pfPath), wd+"/"))
@@ -87,7 +88,7 @@ func (r *Planner) Apply(ctx context.Context, opts ApplyOpts) (*execute.Result, e
 	if err != nil {
 		return nil, err
 	}
-	if err := r.pruneState(plan, stateDir); err != nil {
+	if err := r.pruneState(stdio.FromContext(ctx), plan, stateDir); err != nil {
 		return nil, err
 	}
 
