@@ -139,13 +139,13 @@ func (ep *execPool) feedPlan(plan *compiler.Plan, pc *planCache) {
 		ep.std.Debugf("feedPlan dep %s (%p)", dep.Name, dep)
 		ep.feedPlan(dep, pc)
 	}
-	fmt.Println("feedPlan plans:", plan.Name, len(plan.Plans))
+	ep.std.Debug("feedPlan plans:", plan.Name, len(plan.Plans))
 	for _, sp := range plan.Plans {
 		ep.std.Debugf("feedPlan plan %s (%p)", sp.Name, sp)
 		ep.feedPlan(sp, pc)
 	}
 
-	fmt.Println("feedPlan maino", plan.Name)
+	ep.std.Debug("feedPlan main:", plan.Name)
 	if len(plan.RealOps()) > 0 && pc.areDepsComplete(plan) {
 		ep.std.Debugf("feedPlan main %s (%p)", plan.Name, plan)
 		ep.enqueueOnePlan(plan, pc)
