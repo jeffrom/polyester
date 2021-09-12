@@ -21,6 +21,9 @@ grep c c || { echo c > c; }
 # 7
 echo nice
 
+# XXX this doesn't work
+# P sh --dir $testdir; echo "sup"
+
 P sh --dir $testdir --target d
 grep c c || { echo c > c; }
 
