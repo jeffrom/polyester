@@ -47,7 +47,7 @@ $ cd ~/repos/cluster && git pull && polyester apply
 
 ## how does it work
 
-The key concepts are "plans" and "operators". Plans are sequences of operations, used to execute commands on an environment. Operations are run in order, by plan (plans will probably run concurrently in the future). There is a caching strategy similar to the docker layer cache, where, if an operation's state changes, it and every subsequent operation is executed.
+The key concepts are "plans" and "operators". Plans are sequences of operations, used to execute commands on an environment. Operations are run in order, by plan (which run concurrently). There is a caching strategy for operations where, if an operation's state changes, it and every subsequent operation is executed.
 
 The primary domain language is POSIX shell (though others could be supported without a huge amount of effort). Shell scripts are evaluated to generate the execution plan by outputting it to an intermediate format in the local filesystem. This means variable scope and other behavior may not be what you expect because the script doesn't immediately execute, but rather constructs an intermediate plan.
 
