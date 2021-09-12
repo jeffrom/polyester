@@ -82,15 +82,15 @@ $ ./polyester apply --dir-root /tmp/mysandbox --state-dir /tmp/mystate testdata/
 ## todo
 
 * operators
-  - secret management (age, sops, ?)
+  - more/better secret management (sops, ?)
   - templating (maybe w/ gomplate)
   - systemd operators to reenable, reinstall, restart units on state changes (maybe shell is enough).
+  - apt add source
+  - certbot
 * shell plan script improvements
   - validate operator calls in shell scripts pre-execution
   - handling variables / scope in shell script plans
-  - maybe a special annotation to embed sh operator scripts directly in plan files (currently you pass a string, ie `polyester sh "echo hi"`).
 * planner improvements
-  - concurrent plan execution, accounting for dependencies
   - improve dryrun contract -- ie planner passes --dry-run to commands that have it otherwise execution is skipped.
   - use remote, versioned git repo / tar / exported plans
   - prune old / unused state files
