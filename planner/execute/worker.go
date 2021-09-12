@@ -70,7 +70,7 @@ func (ep *execPool) enqueueOnePlan(plan *compiler.Plan, pc *planCache) {
 				ep.std.Debugf("enqueueOnePlan: worker %p wasn't available", wrk)
 			}
 		}
-		ep.std.Info("execPool: no available goroutines found, waiting for more")
+		ep.std.Debug("execPool: no available goroutines found, waiting for more")
 		<-ep.unblockWrkPoll
 	}
 }

@@ -117,6 +117,7 @@ func readOpState(octx operator.Context, op operator.Interface, opts Opts) (state
 }
 
 func executeOperation(octx operator.Context, op operator.Interface, opts Opts, dirty bool, prevst, st state.State) (*OperationResult, error) {
+	std := stdio.FromContext(octx.Context)
 	prevDirty := dirty
 	info := op.Info()
 	name := info.Name()
@@ -165,7 +166,7 @@ func executeOperation(octx operator.Context, op operator.Interface, opts Opts, d
 		if sr, ok := origOp.(fmt.Stringer); ok {
 			opFmt += " " + sr.String()
 		}
-		fmt.Printf("-> execute %s%s (%+v)\n", opFmt, dryrunLabel, data.Command.Target)
+		std.Debugf("-> execute %s%s (%+v)", opFmt, dryrunLabel, data.Command.Target)
 
 		if !opts.Dryrun {
 			executed = true
@@ -188,7 +189,7 @@ func executeOperation(octx operator.Context, op operator.Interface, opts Opts, d
 			// targetSt.WriteTo(os.Stdout)
 			// fmt.Println("\n", targetSt.Changed(prevst.Target()))
 			if !targetSt.Empty() && !targetSt.Changed(prevst.Target()) {
-				fmt.Println("-> target state hasn't changed after execution")
+				std.Debug("-> target state hasn't changed after execution")
 				if !prevDirty {
 					dirty = false
 				}
