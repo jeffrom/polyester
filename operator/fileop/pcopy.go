@@ -48,6 +48,7 @@ Copy files, resolving paths from the plan directory.
 
 func (op Pcopy) GetState(octx operator.Context) (state.State, error) {
 	std := stdio.FromContext(octx.Context)
+	std.Debug("pcopy: GetState")
 	opts := op.Args.(*PcopyOpts)
 	// TODO ResolvePlanFile to get source (plan files) state, get dest state as
 	// normal
@@ -56,7 +57,7 @@ func (op Pcopy) GetState(octx operator.Context) (state.State, error) {
 	if err != nil {
 		return st, err
 	}
-	std.Debug("pcopy: source files:", sources)
+	std.Debug("pcopy: GetState: source files:", sources)
 	st, err = appendFiles(octx.PlanDir, st, true, false, sources...)
 	if err != nil {
 		return st, err
