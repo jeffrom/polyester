@@ -109,13 +109,7 @@ func readOpState(octx operator.Context, op operator.Interface, opts Opts) (state
 	if err != nil {
 		return prevst, state.State{}, err
 	}
-
-	origOp, err := compiler.GetOperation(op)
-	if err != nil {
-		return prevst, state.State{}, err
-	}
-
-	st, err := origOp.GetState(octx)
+	st, err := op.GetState(octx)
 	if err != nil {
 		return prevst, st, err
 	}
