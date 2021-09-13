@@ -7,6 +7,7 @@ import (
 
 	"github.com/jeffrom/polyester/operator"
 	"github.com/jeffrom/polyester/state"
+	"github.com/jeffrom/polyester/stdio"
 )
 
 type PcopyOpts struct {
@@ -46,6 +47,7 @@ Copy files, resolving paths from the plan directory.
 }
 
 func (op Pcopy) GetState(octx operator.Context) (state.State, error) {
+	std := stdio.FromContext(octx.Context)
 	opts := op.Args.(*PcopyOpts)
 	// TODO ResolvePlanFile to get source (plan files) state, get dest state as
 	// normal
@@ -54,7 +56,7 @@ func (op Pcopy) GetState(octx operator.Context) (state.State, error) {
 	if err != nil {
 		return st, err
 	}
-	// fmt.Println("source files:", sources)
+	std.Debug("pcopy: source files:", sources)
 	st, err = appendFiles(octx.PlanDir, st, true, false, sources...)
 	if err != nil {
 		return st, err
@@ -65,8 +67,10 @@ func (op Pcopy) GetState(octx operator.Context) (state.State, error) {
 		return st, err
 	}
 	st = st.Map(func(e state.Entry) state.Entry { return e.WithoutTimestamps() })
+	if std.Verbose {
+		st.WriteTo(std.Stdout())
+	}
 	return st, nil
-	// st.WriteTo(os.Stdout)
 }
 
 // func (op Pcopy) Changed(a, b state.State) (bool, error) {
