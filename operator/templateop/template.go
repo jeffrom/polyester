@@ -202,8 +202,7 @@ func readUserData(octx operator.Context, opts *TemplateOpts) (map[string]interfa
 
 func readSecretData(octx operator.Context, ids []age.Identity, opts *TemplateOpts) (map[string][]byte, error) {
 	secretPaths, err := octx.PlanDir.Resolve("secrets", []string{"**/*.age"})
-	if err != nil {
-		panic(err)
+	if err != nil && !errors.Is(err, opfs.ErrNotFound) {
 		return nil, err
 	}
 

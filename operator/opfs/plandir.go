@@ -11,6 +11,8 @@ import (
 	"github.com/bmatcuk/doublestar/v4"
 )
 
+var ErrNotFound = errors.New("plandir: not found")
+
 type PlanDir interface {
 	fs.GlobFS
 	fs.StatFS
@@ -203,7 +205,8 @@ func (pd fsPlanDir) Resolve(kind string, pats []string) ([]string, error) {
 		}
 
 		if !found {
-			return nil, fmt.Errorf("plandir: %s not found", pat)
+			// return nil, fmt.Errorf("plandir: %s not found", pat)
+			return nil, ErrNotFound
 		}
 	}
 
