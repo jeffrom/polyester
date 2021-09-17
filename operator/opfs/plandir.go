@@ -195,8 +195,8 @@ func (pd fsPlanDir) Resolve(kind string, pats []string) ([]string, error) {
 			// fmt.Println("matches:", err, len(matches), matches)
 			cleaned := make([]string, len(matches))
 			for i, m := range matches {
-				// cleaned[i] = strings.TrimPrefix(m, planDir+string(sep))
-				cleaned[i] = m
+				cleaned[i] = strings.TrimPrefix(m, planDir+string(sep))
+				// cleaned[i] = m
 			}
 			if err == nil && len(cleaned) > 0 {
 				res = append(res, cleaned...)
