@@ -58,6 +58,8 @@ func (p Plan) TextSummary(w io.Writer, prevs, currs []state.State) error {
 			if currst.Changed(prevst) {
 				chgLabel = "X"
 			}
+			// bw.WriteString("prev state:\n")
+			// prevst.WriteTo(bw)
 		}
 
 		origOp, err := GetOperation(op)

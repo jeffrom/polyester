@@ -31,7 +31,7 @@ func (o StdIO) Debug(args ...interface{}) {
 	if !o.Verbose {
 		return
 	}
-	msg := fmt.Sprintf("%sWARNING:", fmtScopes(o.scopes))
+	msg := fmt.Sprintf("%s", fmtScopes(o.scopes))
 	fmt.Fprintln(o.Stdout(), append([]interface{}{msg}, args...)...)
 }
 

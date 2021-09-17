@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/jeffrom/polyester/operator"
+	"github.com/jeffrom/polyester/operator/opfs"
 	"github.com/jeffrom/polyester/state"
 	"github.com/jeffrom/polyester/stdio"
 )
@@ -58,12 +59,12 @@ func (op Pcopy) GetState(octx operator.Context) (state.State, error) {
 		return st, err
 	}
 	std.Debug("pcopy: GetState: source files:", sources)
-	st, err = appendFiles(octx.PlanDir, st, true, false, sources...)
+	st, err = appendFiles(opfs.New("/"), st, true, false, sources...)
 	if err != nil {
 		return st, err
 	}
 
-	st, err = getStateFileGlobs(octx.FS, state.State{}, opts.Dest, sources, opts.ExcludeGlobs)
+	st, err = getStateFileGlobs(octx.FS, st, opts.Dest, sources, opts.ExcludeGlobs)
 	if err != nil {
 		return st, err
 	}

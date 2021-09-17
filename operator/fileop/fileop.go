@@ -104,6 +104,7 @@ func appendFiles(ofs operator.FS, st state.State, source, target bool, files ...
 				},
 			})
 		}
+		// fmt.Println("append done:", file)
 	}
 	return st, nil
 }

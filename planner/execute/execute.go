@@ -43,7 +43,7 @@ func Execute(octx operator.Context, plan *compiler.Plan, opts Opts) (*Result, er
 	return ep.wait()
 }
 
-func executePlan(octx operator.Context, std stdio.StdIO, opts Opts, plan *compiler.Plan) (*PlanResult, error) {
+func executePlan(octx operator.Context, std *stdio.StdIO, opts Opts, plan *compiler.Plan) (*PlanResult, error) {
 	if plan.Name != "main" {
 		// fmt.Println("setting subdir", plan.Name)
 		spdir := octx.PlanDir.Join("plans", plan.Name)

@@ -42,17 +42,17 @@ func (o StdIO) Stderr() io.Writer {
 	return os.Stderr
 }
 
-func (o StdIO) WithScope(scopes ...string) StdIO {
+func (o *StdIO) WithScope(scopes ...string) *StdIO {
 	o.scopes = scopes
 	return o
 }
 
-func (o StdIO) AppendScope(scopes ...string) StdIO {
+func (o *StdIO) AppendScope(scopes ...string) *StdIO {
 	o.scopes = append(o.scopes, scopes...)
 	return o
 }
 
-func (o StdIO) ClearScope() StdIO {
+func (o *StdIO) ClearScope() *StdIO {
 	o.scopes = nil
 	return o
 }
