@@ -79,6 +79,19 @@ func (e Entry) WithoutTimestamps() Entry {
 	}
 }
 
+func (e Entry) ChecksumOnly() Entry {
+	file := e.File
+	if file != nil {
+		file = e.File.ChecksumOnly()
+	}
+	return Entry{
+		Name:   e.Name,
+		File:   file,
+		KV:     e.KV,
+		Target: e.Target,
+	}
+}
+
 // type stateEntries []Entry
 
 // func (se stateEntries) Len() int {

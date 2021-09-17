@@ -68,6 +68,23 @@ func (f *StateFileEntry) WithoutTimestamps() *StateFileEntry {
 	return sf
 }
 
+func (f *StateFileEntry) ChecksumOnly() *StateFileEntry {
+	if f == nil {
+		return nil
+	}
+	fi := f.Info
+	sf := &StateFileEntry{
+		Info:   fi,
+		SHA256: f.SHA256,
+	}
+	if fi != nil {
+		sf.Info = StateFileInfo{
+			SHA256: f.SHA256,
+		}
+	}
+	return sf
+}
+
 type StateFileInfo struct {
 	RawName    string      `json:"name"`
 	RawModTime time.Time   `json:"mtime,omitempty"`

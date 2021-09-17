@@ -68,7 +68,7 @@ func (op Pcopy) GetState(octx operator.Context) (state.State, error) {
 	if err != nil {
 		return st, err
 	}
-	st = st.Map(func(e state.Entry) state.Entry { return e.WithoutTimestamps() })
+	st = st.Map(func(e state.Entry) state.Entry { return e.ChecksumOnly() })
 	if std.Verbose {
 		st.WriteTo(std.Stdout())
 	}
