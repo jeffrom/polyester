@@ -29,6 +29,9 @@ func New() *Compiler {
 
 func (c *Compiler) Compile(ctx context.Context, m *manifest.Manifest) (*Plan, error) {
 	allOptsOnce.Do(setupAllOps)
+	std := stdio.FromContext(ctx)
+	std.Debugf("compiler: compiling %d plans", len(m.Plans))
+
 	var environ []string
 	var selfFile string
 	if c.environ == nil {
@@ -43,10 +46,12 @@ func (c *Compiler) Compile(ctx context.Context, m *manifest.Manifest) (*Plan, er
 
 	im := newIntermediatePlan(m)
 	// TODO could do this concurrently
+	std.Debugf("compiler: execOne %q", m.Main)
 	if err := c.execOne(ctx, im, m.Main, m.MainScript); err != nil {
 		return nil, err
 	}
 	for name, plan := range m.Plans {
+		std.Debugf("compiler: execOne %q", name)
 		if err := c.execOne(ctx, im, name, plan.MainScript); err != nil {
 			return nil, err
 		}
@@ -59,11 +64,13 @@ func (c *Compiler) Compile(ctx context.Context, m *manifest.Manifest) (*Plan, er
 }
 
 func (c *Compiler) execOne(ctx context.Context, im *intermediatePlan, name string, b []byte) error {
+	std := stdio.FromContext(ctx)
 	annotated, err := annotatePlanScript(b, c.selfFile)
 	if err != nil {
 		return err
 	}
 	script := string(annotated)
+	// std.Debugf("compiler: annotated script: %s", script)
 	// TODO statically validate script here
 
 	r, w, err := os.Pipe()
@@ -72,9 +79,9 @@ func (c *Compiler) execOne(ctx context.Context, im *intermediatePlan, name strin
 	}
 	cmd := executil.CommandContext(ctx, "sh", "-c", script)
 	cmd.Env = append(os.Environ(), c.environ...)
-	cmd.Stdin = os.Stdin
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	// cmd.Stdin = std.Stdin()
+	cmd.Stdout = stdio.NewPrefixWriter(std.Stdout(), name)
+	cmd.Stderr = stdio.NewPrefixWriter(std.Stderr(), name)
 	cmd.ExtraFiles = []*os.File{w}
 
 	if err := cmd.Run(); err != nil {
@@ -91,7 +98,7 @@ func (c *Compiler) execOne(ctx context.Context, im *intermediatePlan, name strin
 	return nil
 }
 
-func addSelfPathToEnviron(o stdio.StdIO, environ []string) (string, []string, error) {
+func addSelfPathToEnviron(o *stdio.StdIO, environ []string) (string, []string, error) {
 	testbin := os.Getenv("TESTBIN")
 	if _, err := exec.LookPath("polyester"); testbin == "" && err == nil {
 		return "", environ, nil

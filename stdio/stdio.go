@@ -57,19 +57,19 @@ func (o StdIO) ClearScope() StdIO {
 	return o
 }
 
-func SetContext(ctx context.Context, o StdIO) context.Context {
+func SetContext(ctx context.Context, o *StdIO) context.Context {
 	return context.WithValue(ctx, stdioKey, o)
 }
 
-func FromContext(ctx context.Context) StdIO {
+func FromContext(ctx context.Context) *StdIO {
 	if ctx == nil {
-		return StdIO{}
+		panic("stdio: context was nil")
 	}
 	iv := ctx.Value(stdioKey)
 	if iv == nil {
-		return StdIO{}
+		panic("stdio: context stdio value missing")
 	}
-	return iv.(StdIO)
+	return iv.(*StdIO)
 }
 
 func Stdin(ctx context.Context) io.Reader  { return ctx.Value(stdioKey).(StdIO).Stdin() }

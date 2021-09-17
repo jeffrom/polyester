@@ -1,19 +1,21 @@
 package commands
 
 import (
+	"context"
+
 	"github.com/spf13/cobra"
 
 	"github.com/jeffrom/polyester/operator"
 )
 
-func newExecCmd() (*cobra.Command, error) {
+func newExecCmd(ctx context.Context) (*cobra.Command, error) {
 	cmd := &cobra.Command{
 		Use:    "exec",
 		Short:  "executes operators",
 		Hidden: true,
 	}
 
-	if err := addOps(cmd, operatorCommandForExec); err != nil {
+	if err := addOps(ctx, cmd, operatorCommandForExec); err != nil {
 		return nil, err
 	}
 	return cmd, nil

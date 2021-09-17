@@ -39,6 +39,9 @@ type Metadata struct {
 }
 
 func LoadDir(dir string) (*Manifest, error) {
+	if dir == "" {
+		dir = "."
+	}
 	if info, err := os.Stat(dir); err != nil {
 		return nil, err
 	} else if !info.IsDir() {

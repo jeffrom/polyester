@@ -17,6 +17,6 @@ func main() {
 }
 
 func run(rawArgs []string) error {
-	ctx := stdio.SetContext(context.Background(), stdio.StdIO{})
+	ctx := stdio.SetContext(context.Background(), &stdio.StdIO{})
 	return commands.ExecArgs(ctx, rawArgs[1:])
 }

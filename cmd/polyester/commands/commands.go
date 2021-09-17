@@ -10,7 +10,6 @@ import (
 
 	"github.com/jeffrom/polyester/compiler"
 	"github.com/jeffrom/polyester/operator"
-	"github.com/jeffrom/polyester/planner"
 	"github.com/jeffrom/polyester/stdio"
 )
 
@@ -21,21 +20,7 @@ func ExecArgs(ctx context.Context, args []string) error {
 		SilenceErrors: true, // we are printing errors ourselves
 		SilenceUsage:  true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := cmd.Context()
-			dir := ""
-			if len(args) > 0 {
-				dir = args[0]
-			}
-
-			pl, err := planner.New(dir)
-			if err != nil {
-				return err
-			}
-
-			if err := pl.Check(ctx); err != nil {
-				return err
-			}
-			return nil
+			return cmd.Usage()
 		},
 	}
 
@@ -43,24 +28,24 @@ func ExecArgs(ctx context.Context, args []string) error {
 	rootCmd.PersistentFlags().BoolVarP(&std.Verbose, "verbose", "v", false, "Print additional debug information")
 	rootCmd.PersistentFlags().BoolVarP(&std.Quiet, "quiet", "q", false, "Print only errors and warnings")
 
-	if err := addOps(rootCmd, operatorCommandForPlan); err != nil {
+	if err := addOps(ctx, rootCmd, operatorCommandForPlan); err != nil {
 		return err
 	}
 
-	execCmd, err := newExecCmd()
+	execCmd, err := newExecCmd(ctx)
 	if err != nil {
 		return err
 	}
 	rootCmd.AddCommand(execCmd)
 
+	rootCmd.AddCommand(newCheckCmd())
 	rootCmd.AddCommand(newApplyCmd())
 
 	rootCmd.SetArgs(args)
 	return rootCmd.ExecuteContext(ctx)
 }
 
-func addOps(parent *cobra.Command, fn operatorCommandFunc) error {
-	ctx := parent.Context()
+func addOps(ctx context.Context, parent *cobra.Command, fn operatorCommandFunc) error {
 	std := stdio.FromContext(ctx)
 	for _, op := range compiler.Operators() {
 		std.Debug("adding command name:", op.Info().Name())

@@ -5,17 +5,23 @@ import (
 	"context"
 	"io/fs"
 	"os"
+	"path/filepath"
 
 	"github.com/jeffrom/polyester/compiler"
 	"github.com/jeffrom/polyester/compiler/shell"
+	"github.com/jeffrom/polyester/manifest"
 	"github.com/jeffrom/polyester/operator"
 	"github.com/jeffrom/polyester/operator/opfs"
 	"github.com/jeffrom/polyester/operator/templates"
+	"github.com/jeffrom/polyester/stdio"
 )
 
 func (r *Planner) Check(ctx context.Context) error {
+	std := stdio.FromContext(ctx)
 	pf := r.getPlanFile()
 	pb, err := fs.ReadFile(os.DirFS(r.rootDir), pf)
+	std.Debugf("planner check: rootDir %s", r.rootDir)
+	std.Debugf("planner check: planfile %s", filepath.Join(r.rootDir, pf))
 	if err != nil {
 		return err
 	}
@@ -25,6 +31,15 @@ func (r *Planner) Check(ctx context.Context) error {
 		return err
 	}
 	if err := psh.Compile(ctx); err != nil {
+		return err
+	}
+
+	std.Debugf("Reading manifest dir: %s", r.rootDir)
+	mani, err := manifest.LoadDir(r.rootDir)
+	if err != nil {
+		return err
+	}
+	if _, err := compiler.New().Compile(ctx, mani); err != nil {
 		return err
 	}
 	return nil

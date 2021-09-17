@@ -10,7 +10,7 @@ import (
 )
 
 type execPool struct {
-	std     stdio.StdIO
+	std     *stdio.StdIO
 	workers []*runWorker
 	out     chan *PlanResult
 	n       int64
@@ -22,7 +22,7 @@ type execPool struct {
 	unblockWrkPoll chan struct{}
 }
 
-func newExecPool(conc int, std stdio.StdIO) *execPool {
+func newExecPool(conc int, std *stdio.StdIO) *execPool {
 	out := make(chan *PlanResult)
 	workers := make([]*runWorker, conc)
 	for i := 0; i < conc; i++ {

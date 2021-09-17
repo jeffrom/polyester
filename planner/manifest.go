@@ -60,7 +60,7 @@ func (r *Planner) setupState(plan *compiler.Plan, opts ApplyOpts) (string, error
 	return stateDir, nil
 }
 
-func (r *Planner) pruneState(std stdio.StdIO, plan *compiler.Plan, stateDir string) error {
+func (r *Planner) pruneState(std *stdio.StdIO, plan *compiler.Plan, stateDir string) error {
 	// don't prune for single subplan runs, only for manifests.
 	mDir, err := r.findManifestDir()
 	if err != nil {

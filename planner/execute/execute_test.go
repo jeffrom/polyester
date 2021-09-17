@@ -59,7 +59,7 @@ func TestPool(t *testing.T) {
 			if tc.concurrency > 0 {
 				n = tc.concurrency
 			}
-			ep := newExecPool(n, stdio.StdIO{})
+			ep := newExecPool(n, &stdio.StdIO{})
 			ep.start(octx, opts)
 
 			mani, err := manifest.LoadDir(planDir)
